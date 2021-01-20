@@ -32,6 +32,7 @@ type (
 
 	aFuncDef struct {
 		Name    string
+		Type    string
 		Meta    *types.FunctionMeta
 		Params  aFuncParamSet
 		Results aFuncResultSet
@@ -85,7 +86,7 @@ func procAutomationFunctions(mm ...string) (dd []*aFuncDefs, err error) {
 		d.Name = d.Name[:len(d.Name)-13]
 
 		if err := yaml.NewDecoder(f).Decode(d); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not decode %s: %w", m, err)
 		}
 
 		dd = append(dd, d)
