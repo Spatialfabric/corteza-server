@@ -32,10 +32,10 @@ type (
 		err error
 
 		// input variables that were sent to resume the session
-		input expr.Vars
+		input *expr.Vars
 
 		// scope
-		scope expr.Vars
+		scope *expr.Vars
 
 		// error handling step
 		errHandler Step
@@ -44,7 +44,7 @@ type (
 	}
 )
 
-func NewState(ses *Session, owner auth.Identifiable, caller, current Step, scope expr.Vars) *State {
+func NewState(ses *Session, owner auth.Identifiable, caller, current Step, scope *expr.Vars) *State {
 	return &State{
 		stateId:   nextID(),
 		owner:     owner,
@@ -58,7 +58,7 @@ func NewState(ses *Session, owner auth.Identifiable, caller, current Step, scope
 	}
 }
 
-func FinalState(ses *Session, scope expr.Vars) *State {
+func FinalState(ses *Session, scope *expr.Vars) *State {
 	return &State{
 		stateId:   nextID(),
 		sessionId: ses.id,
@@ -68,7 +68,7 @@ func FinalState(ses *Session, scope expr.Vars) *State {
 	}
 }
 
-func (s State) Next(current Step, scope expr.Vars) *State {
+func (s State) Next(current Step, scope *expr.Vars) *State {
 	return &State{
 		stateId: nextID(),
 		created: *now(),

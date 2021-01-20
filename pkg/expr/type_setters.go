@@ -6,16 +6,8 @@ import (
 	"time"
 )
 
-func UnwindTyped(val interface{}) interface{} {
-	if tv, is := val.(TypedValue); is {
-		return tv.Get()
-	}
-
-	return val
-}
-
-func SetIDWithPath(dst *uint64, val interface{}, pp ...string) error {
-	val = UnwindTyped(val)
+func SafeIDSet(dst *uint64, val interface{}, pp ...string) error {
+	val = UntypedValue(val)
 
 	if len(pp) > 0 {
 		return fmt.Errorf("can not set ID with path")
@@ -30,8 +22,55 @@ func SetIDWithPath(dst *uint64, val interface{}, pp ...string) error {
 	return nil
 }
 
-func SetTimeWithPath(dst *time.Time, val interface{}, pp ...string) error {
-	val = UnwindTyped(val)
+func SafeStringSet(dst *string, val interface{}, pp ...string) error {
+	val = UntypedValue(val)
+
+	if len(pp) > 0 {
+		return fmt.Errorf("can not set string with path")
+	}
+
+	if tmp, err := cast.ToStringE(val); err != nil {
+		return err
+	} else {
+		*dst = tmp
+	}
+
+	return nil
+}
+func SafeHandleSet(dst *string, val interface{}, pp ...string) error {
+	val = UntypedValue(val)
+
+	if len(pp) > 0 {
+		return fmt.Errorf("can not set string with path")
+	}
+
+	if tmp, err := cast.ToStringE(val); err != nil {
+		return err
+	} else {
+		*dst = tmp
+	}
+
+	return nil
+}
+
+func SafeBooleanSet(dst *bool, val interface{}, pp ...string) error {
+	val = UntypedValue(val)
+
+	if len(pp) > 0 {
+		return fmt.Errorf("can not set string with path")
+	}
+
+	if tmp, err := cast.ToBoolE(val); err != nil {
+		return err
+	} else {
+		*dst = tmp
+	}
+
+	return nil
+}
+
+func SafeDateTimeSet(dst *time.Time, val interface{}, pp ...string) error {
+	val = UntypedValue(val)
 
 	if len(pp) > 0 {
 		return fmt.Errorf("can not set time with path")
@@ -46,8 +85,8 @@ func SetTimeWithPath(dst *time.Time, val interface{}, pp ...string) error {
 	return nil
 }
 
-func SetKVWithPath(dst *map[string]string, val interface{}, pp ...string) (err error) {
-	val = UnwindTyped(val)
+func SafeKVSet(dst *map[string]string, val interface{}, pp ...string) (err error) {
+	val = UntypedValue(val)
 
 	switch len(pp) {
 	case 0:

@@ -6,7 +6,7 @@ imports:
 
 functions:
   sequence:
-    type: iterator
+    kind: iterator
     meta:
       short: Iterates over sequence of numbers
     params:
@@ -25,7 +25,7 @@ functions:
         go: bool
 
   do:
-    type: iterator
+    kind: iterator
     meta:
       short: Iterates while condition is true
     params:
@@ -37,7 +37,7 @@ functions:
           description: Expression to be evaluated each iteration; loop will continue until expression is true
 
   each:
-    type: iterator
+    kind: iterator
     meta:
       short: Iterates over set of items
     params:
@@ -50,7 +50,7 @@ functions:
         go: 'interface{}'
 
   lines:
-    type: iterator
+    kind: iterator
     meta:
       short: Iterates over lines from stream
     params:

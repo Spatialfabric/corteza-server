@@ -33,20 +33,20 @@ func (s *sesTestStep) Exec(ctx context.Context, r *ExecRequest) (ExecResponse, e
 		return s.exec(ctx, r)
 	}
 
-	var args = struct {
+	var args = &struct {
 		Path    string
 		Counter int64
 	}{}
 
-	if err := r.Scope.Decode(&args); err != nil {
+	if err := r.Scope.Decode(args); err != nil {
 		return nil, err
 	}
 
-	return expr.Vars{
+	return expr.RVars{
 		"counter": expr.Must(expr.NewInteger(args.Counter + 1)),
 		"path":    expr.Must(expr.NewString(args.Path + "/" + s.name)),
 		s.name:    expr.Must(expr.NewString("executed")),
-	}, nil
+	}.Vars(), nil
 }
 
 func (s *sesTestTemporal) Exec(ctx context.Context, r *ExecRequest) (ExecResponse, error) {
@@ -58,9 +58,9 @@ func (s *sesTestTemporal) Exec(ctx context.Context, r *ExecRequest) (ExecRespons
 		return DelayExecution(s.until), nil
 	}
 
-	return expr.Vars{
+	return expr.RVars{
 		"waitForMoment": expr.Must(expr.NewString("executed")),
-	}, nil
+	}.Vars(), nil
 }
 
 func TestSession_TwoStepWorkflow(t *testing.T) {
@@ -75,11 +75,11 @@ func TestSession_TwoStepWorkflow(t *testing.T) {
 	)
 
 	wf.AddStep(s1, s2) // 1st execute s1 then s2
-	ses.Exec(ctx, s1, expr.Vars{"two": expr.Must(expr.NewInteger(1)), "three": expr.Must(expr.NewInteger(1))})
+	ses.Exec(ctx, s1, expr.RVars{"two": expr.Must(expr.NewInteger(1)), "three": expr.Must(expr.NewInteger(1))}.Vars())
 	ses.Wait(ctx)
 	req.NoError(ses.Error())
 	req.NotNil(ses.Result())
-	req.Equal("/s1/s2", ses.Result()["path"].Get())
+	req.Equal("/s1/s2", expr.Must(expr.Select(ses.Result(), "path")).Get())
 }
 
 func TestSession_SplitAndMerge(t *testing.T) {
@@ -107,10 +107,10 @@ func TestSession_SplitAndMerge(t *testing.T) {
 	req.NoError(ses.Error())
 	req.NotNil(ses.Result())
 	// split3 only!
-	req.Equal("/start/split3", ses.Result()["path"].Get())
-	req.Contains(ses.Result(), "split1")
-	req.Contains(ses.Result(), "split2")
-	req.Contains(ses.Result(), "split3")
+	req.Equal("/start/split3", expr.Must(expr.Select(ses.Result(), "path")).Get())
+	req.Contains(ses.Result().Dict(), "split1")
+	req.Contains(ses.Result().Dict(), "split2")
+	req.Contains(ses.Result().Dict(), "split3")
 }
 
 func TestSession_Delays(t *testing.T) {
@@ -139,10 +139,13 @@ func TestSession_Delays(t *testing.T) {
 				return WaitForInput(), nil
 			}
 
-			return expr.Vars{
-				"input":        r.Input["input"],
+			out := expr.RVars{
 				"waitForInput": expr.Must(expr.NewString("executed")),
-			}, nil
+			}.Vars()
+
+			r.Input.Copy(out, "input")
+
+			return out, nil
 		}}
 	)
 
@@ -166,7 +169,7 @@ func TestSession_Delays(t *testing.T) {
 	req.True(ses.Suspended())
 
 	// push in the input
-	req.NoError(ses.Resume(ctx, waitForInputStateId.Load(), expr.Vars{"input": expr.Must(expr.NewString("foo"))}))
+	req.NoError(ses.Resume(ctx, waitForInputStateId.Load(), expr.RVars{"input": expr.Must(expr.NewString("foo"))}.Vars()))
 
 	req.False(ses.Suspended())
 	ses.Wait(ctx)
@@ -176,9 +179,10 @@ func TestSession_Delays(t *testing.T) {
 	req.True(ses.Idle())
 	req.NoError(ses.Error())
 	req.NotNil(ses.Result())
-	req.Contains(ses.Result(), "waitForMoment")
-	req.Contains(ses.Result(), "waitForInput")
-	req.Equal("foo", ses.Result()["input"].Get())
+	req.Contains(ses.Result().Dict(), "waitForMoment")
+	req.Contains(ses.Result().Dict(), "waitForInput")
+	req.Equal("foo", expr.Must(expr.Select(ses.Result(), "input")).Get())
+
 }
 
 func bmSessionSimpleStepSequence(c uint64, b *testing.B) {

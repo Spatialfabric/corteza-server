@@ -183,7 +183,7 @@ func TestWorkflowCreateFull(t *testing.T) {
 			Enabled:      true,
 			Trace:        true,
 			KeepSessions: 10000,
-			Scope:        expr.Vars{"foo": expr.Must(expr.NewString("bar"))},
+			Scope:        expr.RVars{"foo": expr.Must(expr.NewString("bar"))}.Vars(),
 			Steps: types.WorkflowStepSet{
 				{ID: 1, Kind: types.WorkflowStepKindVisual, Meta: types.WorkflowStepMeta{Visual: map[string]interface{}{"foo": "bar"}}},
 				{ID: 2, Kind: types.WorkflowStepKindVisual},

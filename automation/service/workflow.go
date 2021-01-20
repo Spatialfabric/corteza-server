@@ -248,7 +248,7 @@ func (svc *workflow) UndeleteByID(ctx context.Context, workflowID uint64) error 
 // Start runs a new workflow
 //
 // Workflow execution is asynchronous operation.
-func (svc *workflow) Start(ctx context.Context, workflowID uint64, scope expr.Vars) error {
+func (svc *workflow) Start(ctx context.Context, workflowID uint64, scope *expr.Vars) error {
 	defer svc.mux.Unlock()
 	svc.mux.Lock()
 	return errors.Internal("pending implementation")
@@ -528,7 +528,7 @@ func (svc *workflow) workflowStepDefConv(g *wfexec.Graph, s *types.WorkflowStep,
 		case types.WorkflowStepKindGateway:
 			return svc.convGateway(g, s, in, out)
 
-		case types.WorkflowStepKindFunction:
+		case types.WorkflowStepKindFunction, types.WorkflowStepKindIterator:
 			return svc.convFunctionStep(g, s, out)
 
 		//case types.WorkflowStepKindMessage:
@@ -597,7 +597,7 @@ func (svc *workflow) convGateway(g *wfexec.Graph, s *types.WorkflowStep, in, out
 
 			// wrapping with fn to make sure that we're dealing with the right wf path inside gw-path tester fn
 			err := func(c types.WorkflowPath) error {
-				p, err := wfexec.NewGatewayPath(child, func(ctx context.Context, scope expr.Vars) (bool, error) {
+				p, err := wfexec.NewGatewayPath(child, func(ctx context.Context, scope *expr.Vars) (bool, error) {
 					if len(c.Expr) == 0 {
 						return true, nil
 					}
@@ -669,11 +669,16 @@ func (svc *workflow) convFunctionStep(g *wfexec.Graph, s *types.WorkflowStep, ou
 	if def := reg.Function(s.Ref); def == nil {
 		return nil, errors.Internal("unknown function %q", s.Ref)
 	} else {
+		if def.Kind != string(s.Kind) {
+			return nil, fmt.Errorf("unexpected %s on %s step", def.Kind, s.Kind)
+		}
+
 		var (
-			err error
+			err        error
+			isIterator = def.Kind == types.FunctionKindIterator
 		)
 
-		if def.Type == types.FTypeIterator {
+		if isIterator {
 			if len(out) != 2 {
 				return nil, fmt.Errorf("expecting exactly two paths (next, exit) out of iterator function step")
 			}
@@ -693,7 +698,7 @@ func (svc *workflow) convFunctionStep(g *wfexec.Graph, s *types.WorkflowStep, ou
 			return nil, errors.Internal("failed to convert arguments for function %s: %s", s.Ref, err).Wrap(err)
 		}
 
-		if def.Type == types.FTypeIterator {
+		if isIterator {
 			var (
 				next = g.StepByID(out[0].ChildID)
 				exit = g.StepByID(out[1].ChildID)
@@ -802,7 +807,7 @@ func validateSteps(ss ...*types.WorkflowStep) error {
 		case types.WorkflowStepKindGateway:
 			checks = append(checks, noArgs, noResults)
 
-		case types.WorkflowStepKindFunction:
+		case types.WorkflowStepKindFunction, types.WorkflowStepKindIterator:
 
 		case types.WorkflowStepKindPrompt:
 			checks = append(checks, noResults)

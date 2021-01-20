@@ -52,7 +52,7 @@ type (
 func (h logHandler) Debug() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "logDebug",
-		Type: "",
+		Kind: "function",
 		Meta: &atypes.FunctionMeta{
 			Short: "Writes debug log message",
 		},
@@ -68,7 +68,7 @@ func (h logHandler) Debug() *atypes.Function {
 			},
 		},
 
-		Handler: func(ctx context.Context, in expr.Vars) (out expr.Vars, err error) {
+		Handler: func(ctx context.Context, in *expr.Vars) (out *expr.Vars, err error) {
 			var (
 				args = &logDebugArgs{
 					hasMessage: in.Has("message"),
@@ -104,7 +104,7 @@ type (
 func (h logHandler) Info() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "logInfo",
-		Type: "",
+		Kind: "function",
 		Meta: &atypes.FunctionMeta{
 			Short: "Writes info log message",
 		},
@@ -120,7 +120,7 @@ func (h logHandler) Info() *atypes.Function {
 			},
 		},
 
-		Handler: func(ctx context.Context, in expr.Vars) (out expr.Vars, err error) {
+		Handler: func(ctx context.Context, in *expr.Vars) (out *expr.Vars, err error) {
 			var (
 				args = &logInfoArgs{
 					hasMessage: in.Has("message"),
@@ -156,7 +156,7 @@ type (
 func (h logHandler) Warn() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "logWarn",
-		Type: "",
+		Kind: "function",
 		Meta: &atypes.FunctionMeta{
 			Short: "Writes warn log message",
 		},
@@ -172,7 +172,7 @@ func (h logHandler) Warn() *atypes.Function {
 			},
 		},
 
-		Handler: func(ctx context.Context, in expr.Vars) (out expr.Vars, err error) {
+		Handler: func(ctx context.Context, in *expr.Vars) (out *expr.Vars, err error) {
 			var (
 				args = &logWarnArgs{
 					hasMessage: in.Has("message"),
@@ -208,7 +208,7 @@ type (
 func (h logHandler) Error() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "logError",
-		Type: "",
+		Kind: "function",
 		Meta: &atypes.FunctionMeta{
 			Short: "Writes error log message",
 		},
@@ -224,7 +224,7 @@ func (h logHandler) Error() *atypes.Function {
 			},
 		},
 
-		Handler: func(ctx context.Context, in expr.Vars) (out expr.Vars, err error) {
+		Handler: func(ctx context.Context, in *expr.Vars) (out *expr.Vars, err error) {
 			var (
 				args = &logErrorArgs{
 					hasMessage: in.Has("message"),

@@ -3,7 +3,6 @@ package codegen
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cortezaproject/corteza-server/automation/types"
 	. "github.com/cortezaproject/corteza-server/pkg/y7s"
 	"gopkg.in/yaml.v3"
 	"os"
@@ -28,12 +27,12 @@ type (
 		Functions aFunctionSet
 	}
 
-	aFunctionSet []aFuncDef
+	aFunctionSet []*aFuncDef
 
 	aFuncDef struct {
 		Name    string
-		Type    string
-		Meta    *types.FunctionMeta
+		Kind    string
+		Meta    *aFuncMetaDef
 		Params  aFuncParamSet
 		Results aFuncResultSet
 	}
@@ -46,7 +45,7 @@ type (
 		Required bool
 		SetOf    bool
 		Types    []*aFuncParamTypeVarDef
-		Meta     *types.ParamMeta
+		Meta     *aFuncParamMetaDef
 	}
 
 	aFuncParamTypeVarDef struct {
@@ -61,7 +60,19 @@ type (
 		SetOf        bool
 		WorkflowType string `yaml:"wf"`
 		GoType       string `yaml:"go"`
-		Meta         *types.ParamMeta
+		Meta         *aFuncParamMetaDef
+	}
+
+	aFuncMetaDef struct {
+		Short       string
+		Description string
+		Visual      map[string]interface{}
+	}
+
+	aFuncParamMetaDef struct {
+		Label       string
+		Description string
+		Visual      map[string]interface{}
 	}
 )
 
@@ -97,10 +108,14 @@ func procAutomationFunctions(mm ...string) (dd []*aFuncDefs, err error) {
 
 func (set *aFunctionSet) UnmarshalYAML(n *yaml.Node) error {
 	return Each(n, func(k *yaml.Node, v *yaml.Node) (err error) {
-		def := aFuncDef{Name: k.Value}
+		def := &aFuncDef{Name: k.Value}
 
 		if err = v.Decode(&def); err != nil {
 			return err
+		}
+
+		if def.Kind == "" {
+			def.Kind = "function"
 		}
 
 		*set = append(*set, def)

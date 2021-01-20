@@ -62,7 +62,7 @@ type (
 func (h loopHandler) Sequence() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "loopSequence",
-		Type: "iterator",
+		Kind: "iterator",
 		Meta: &atypes.FunctionMeta{
 			Short: "Iterates over sequence of numbers",
 		},
@@ -100,7 +100,7 @@ func (h loopHandler) Sequence() *atypes.Function {
 			},
 		},
 
-		Iterator: func(ctx context.Context, in expr.Vars) (out wfexec.IteratorHandler, err error) {
+		Iterator: func(ctx context.Context, in *expr.Vars) (out wfexec.IteratorHandler, err error) {
 			var (
 				args = &loopSequenceArgs{
 					hasFirst: in.Has("first"),
@@ -134,7 +134,7 @@ type (
 func (h loopHandler) Do() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "loopDo",
-		Type: "iterator",
+		Kind: "iterator",
 		Meta: &atypes.FunctionMeta{
 			Short: "Iterates while condition is true",
 		},
@@ -150,7 +150,7 @@ func (h loopHandler) Do() *atypes.Function {
 			},
 		},
 
-		Iterator: func(ctx context.Context, in expr.Vars) (out wfexec.IteratorHandler, err error) {
+		Iterator: func(ctx context.Context, in *expr.Vars) (out wfexec.IteratorHandler, err error) {
 			var (
 				args = &loopDoArgs{
 					hasWhile: in.Has("while"),
@@ -186,7 +186,7 @@ type (
 func (h loopHandler) Each() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "loopEach",
-		Type: "iterator",
+		Kind: "iterator",
 		Meta: &atypes.FunctionMeta{
 			Short: "Iterates over set of items",
 		},
@@ -206,7 +206,7 @@ func (h loopHandler) Each() *atypes.Function {
 			},
 		},
 
-		Iterator: func(ctx context.Context, in expr.Vars) (out wfexec.IteratorHandler, err error) {
+		Iterator: func(ctx context.Context, in *expr.Vars) (out wfexec.IteratorHandler, err error) {
 			var (
 				args = &loopEachArgs{
 					hasItems: in.Has("items"),
@@ -242,7 +242,7 @@ type (
 func (h loopHandler) Lines() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "loopLines",
-		Type: "iterator",
+		Kind: "iterator",
 		Meta: &atypes.FunctionMeta{
 			Short: "Iterates over lines from stream",
 		},
@@ -262,7 +262,7 @@ func (h loopHandler) Lines() *atypes.Function {
 			},
 		},
 
-		Iterator: func(ctx context.Context, in expr.Vars) (out wfexec.IteratorHandler, err error) {
+		Iterator: func(ctx context.Context, in *expr.Vars) (out wfexec.IteratorHandler, err error) {
 			var (
 				args = &loopLinesArgs{
 					hasStream: in.Has("stream"),

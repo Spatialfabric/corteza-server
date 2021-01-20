@@ -12,79 +12,51 @@ import (
 )
 
 type (
-	Type interface {
-		Type() string
-		Cast(interface{}) (TypedValue, error)
-	}
-
-	TypedValue interface {
-		Type
-		Setter
-		Get() interface{}
-	}
-
-	typedValueWrap struct {
-		Value interface{} `json:"@value"`
-		Type  string      `json:"@type"`
-	}
-
-	Setter interface {
-		Set(interface{}, ...string) error
-	}
-
-	Decoder interface {
-		Decode(reflect.Value) error
-	}
-
-	Dict interface {
-		Dict() map[string]interface{}
-	}
+	// RVars or raw-vars, used as internal type for Vars expr type
+	RVars map[string]TypedValue
 )
 
-func Must(v TypedValue, err error) TypedValue {
-	if err != nil {
-		panic(err)
-	}
-	return v
+// Vars is a utility func that returns RVars wrapped in Vars
+func (v RVars) Vars() *Vars {
+	return &Vars{value: v}
 }
 
-func ReqNoPath(t string, pp []string) error {
-	if len(pp) > 0 {
-		return fmt.Errorf("setting values with path on %s is not supported", t)
-	}
-
-	return nil
-}
-
-type Vars map[string]TypedValue
-
-var _ TypedValue = Vars{}
-
-func (Vars) Type() string { return "Vars" }
-func (Vars) Cast(value interface{}) (TypedValue, error) {
-	switch casted := value.(type) {
-	case Vars:
-		return casted, nil
-	default:
-		return nil, fmt.Errorf("unable to cast type %T to Vars", value)
+func (t Vars) Select(k string) (TypedValue, error) {
+	if v, is := t.value[k]; is {
+		return v, nil
+	} else {
+		return nil, errors.NotFound("no such key '%s'", k)
 	}
 }
 
-func (vv Vars) ResolveTypes(res func(typ string) Type) (err error) {
-	for k, v := range vv {
-		fmt.Printf("resolving %s %T\n", k, v)
+func (t *Vars) SetFieldValue(key string, val interface{}) (err error) {
+	if t.value == nil {
+		t.value = make(RVars)
+	}
+
+	if tv, is := val.(TypedValue); is {
+		t.value[key] = tv
+	} else {
+		t.value[key] = Must(NewAny(val))
+	}
+
+	return err
+}
+
+func (t Vars) ResolveTypes(res func(typ string) Type) (err error) {
+	for k, v := range t.value {
 		if u, is := v.(*Unresolved); is {
 			if res(u.Type()) == nil {
 				return errors.NotFound("failed to resolve unknown or unregistered type %q on %q", u.Type(), k)
 			}
 
-			vv[k], err = res(u.Type()).Cast(vv[k])
+			t.value[k], err = res(u.Type()).Cast(t.value[k])
 			if err != nil {
 				return fmt.Errorf("failed to resolve: %w", err)
 			}
 		}
 
-		if r, is := vv[k].(Vars); is {
+		if r, is := t.value[k].(*Vars); is {
 			if err = r.ResolveTypes(res); err != nil {
 				return
 			}
@@ -94,66 +66,52 @@ func (vv Vars) ResolveTypes(res func(typ string) Type) (err error) {
 	return nil
 }
 
-func (vv Vars) Set(new interface{}, pp ...string) (err error) {
-	var value TypedValue
-	if aux, is := new.(TypedValue); is {
-		value = aux
-	} else if value, err = NewAny(value); err != nil {
-		return err
-	}
-
-	if len(pp) > 0 {
-		p := pp[0]
-		if _, has := vv[p]; !has {
-			if len(pp) > 1 {
-				return fmt.Errorf("%q does not exist, can not set value with path %q", p, strings.Join(pp[1:], "."))
-			}
-
-			vv[p] = value
-		}
-
-		if sub, is := vv[p].(*Vars); is {
-			return sub.Set(new, pp[1:]...)
-		} else if sub, is := vv[p].(Setter); is {
-			return sub.Set(value, pp[1:]...)
-		} else {
-			if len(pp) > 1 {
-				return fmt.Errorf("can not set value with path %q on %T", strings.Join(pp[1:], "."), vv[p])
-			} else {
-				vv[p] = value
-			}
-		}
-
-		return nil
-	} else {
-		return fmt.Errorf("unable to replace Vars")
-	}
-}
-
-func (vv Vars) Get() interface{} {
-	return vv
-}
-
 // Assign takes base variables and assigns all new variables
-func (vv Vars) Merge(nn ...Vars) Vars {
+func (t *Vars) Merge(nn ...Iterator) *Vars {
 	var (
-		out = Vars{}
+		out = &Vars{value: make(RVars)}
 	)
 
-	nn = append([]Vars{vv}, nn...)
-	for i := range nn {
-		for k, v := range nn[i] {
-			out[k] = v
-		}
+	nn = append([]Iterator{t}, nn...)
+
+	for _, i := range nn {
+		_ = i.Each(func(k string, v TypedValue) error {
+			out.value[k] = v
+			return nil
+		})
 	}
 
 	return out
 }
 
+// Assign takes base variables and assigns all new variables
+func (t *Vars) Copy(dst *Vars, kk ...string) {
+	if t == nil {
+		return
+	}
+
+	if dst.value == nil {
+		dst.value = make(RVars)
+	}
+
+	for _, k := range kk {
+		dst.value[k] = t.value[k]
+	}
+}
+
+// Returns true key is present
+func (t *Vars) Has(key string) bool {
+	return t.HasAll(key)
+}
+
 // Returns true if all keys are present
-func (vv Vars) Has(key string, kk ...string) bool {
+func (t *Vars) HasAll(key string, kk ...string) bool {
+	if t == nil {
+		return false
+	}
+
 	for _, key = range append([]string{key}, kk...) {
-		if _, has := vv[key]; !has {
+		if _, has := t.value[key]; !has {
 			return false
 		}
 	}
@@ -162,9 +120,13 @@ func (vv Vars) Has(key string, kk ...string) bool {
 }
 
 // Returns true if all keys are present
-func (vv Vars) Any(key string, kk ...string) bool {
+func (t *Vars) HasAny(key string, kk ...string) bool {
+	if t == nil {
+		return false
+	}
+
 	for _, key = range append([]string{key}, kk...) {
-		if _, has := vv[key]; has {
+		if _, has := t.value[key]; has {
 			return true
 		}
 	}
@@ -172,9 +134,13 @@ func (vv Vars) Any(key string, kk ...string) bool {
 	return false
 }
 
-func (vv Vars) Dict() map[string]interface{} {
+func (t *Vars) Dict() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+
 	dict := make(map[string]interface{})
-	for k, v := range vv {
+	for k, v := range t.value {
 		switch v := v.(type) {
 		case gval.Selector:
 			dict[k] = v
@@ -194,7 +160,11 @@ func (vv Vars) Dict() map[string]interface{} {
 	return dict
 }
 
-func (vv Vars) Decode(dst interface{}) (err error) {
+func (t *Vars) Decode(dst interface{}) (err error) {
+	if t == nil {
+		return nil
+	}
+
 	dstRef := reflect.ValueOf(dst)
 
 	if dstRef.Kind() != reflect.Ptr {
@@ -212,54 +182,54 @@ func (vv Vars) Decode(dst interface{}) (err error) {
 		var (
 			value interface{}
 			has   bool
-			t     = dstRef.Type().Field(i)
+			ftyp  = dstRef.Type().Field(i)
 		)
 
-		keyName := t.Tag.Get("var")
+		keyName := ftyp.Tag.Get("var")
 		if keyName == "" {
-			keyName = strings.ToLower(t.Name[:1]) + t.Name[1:]
+			keyName = strings.ToLower(ftyp.Name[:1]) + ftyp.Name[1:]
 		}
 
-		value, has = vv[keyName]
+		value, has = t.value[keyName]
 		if !has {
 			continue
 		}
 
 		if err = decode(dstRef.Field(i), value); err != nil {
-			return fmt.Errorf("failed to decode value to field %s: %w", t.Name, err)
+			return fmt.Errorf("failed to decode value to field %s: %w", ftyp.Name, err)
 		}
 	}
 
 	return
 }
 
-func (vv *Vars) Scan(value interface{}) error {
+func (t *Vars) Scan(value interface{}) error {
 	//lint:ignore S1034 This typecast is intentional, we need to get []byte out of a []uint8
 	switch value.(type) {
 	case nil:
-		*vv = Vars{}
+		*t = Vars{}
 	case []uint8:
 		b := value.([]byte)
-		if err := json.Unmarshal(b, vv); err != nil {
-			return fmt.Errorf("can not scan '%v' into %T: %w", string(b), vv, err)
+		if err := json.Unmarshal(b, t); err != nil {
+			return fmt.Errorf("can not scan '%v' into %T: %w", string(b), t, err)
 		}
 	}
 
 	return nil
 }
 
-func (vv Vars) Value() (driver.Value, error) {
-	return json.Marshal(vv)
+func (t *Vars) Value() (driver.Value, error) {
+	return json.Marshal(t)
 }
 
 // UnmarshalJSON
-func (vv *Vars) UnmarshalJSON(in []byte) (err error) {
+func (t *Vars) UnmarshalJSON(in []byte) (err error) {
 	var (
 		aux = make(map[string]*typedValueWrap)
 	)
 
-	if *vv == nil {
-		*vv = Vars{}
+	if t.value == nil {
+		t.value = make(map[string]TypedValue)
 	}
 
 	if err = json.Unmarshal(in, &aux); err != nil {
@@ -267,7 +237,7 @@ func (vv *Vars) UnmarshalJSON(in []byte) (err error) {
 	}
 
 	for k, v := range aux {
-		if (*vv)[k], err = NewUnresolved(v.Type, v.Value); err != nil {
+		if t.value[k], err = NewUnresolved(v.Type, v.Value); err != nil {
 			return
 		}
 	}
@@ -275,10 +245,24 @@ func (vv *Vars) UnmarshalJSON(in []byte) (err error) {
 	return nil
 }
 
+func (t *Vars) Each(fn func(k string, v TypedValue) error) (err error) {
+	if t == nil || t.value == nil {
+		return
+	}
+
+	for k, v := range t.value {
+		if err = fn(k, v); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 // UnmarshalJSON parses sort expression when passed inside JSON
-func (vv Vars) MarshalJSON() ([]byte, error) {
+func (t Vars) MarshalJSON() ([]byte, error) {
 	aux := make(map[string]*typedValueWrap)
-	for k, v := range vv {
+	for k, v := range t.value {
 		aux[k] = &typedValueWrap{Type: v.Type()}
 
 		if _, is := v.(json.Marshaler); is {
@@ -310,7 +294,7 @@ func decode(dst reflect.Value, src interface{}) (err error) {
 		return um.Decode(dst)
 	}
 
-	src = UnwindTyped(src)
+	src = UntypedValue(src)
 
 	var (
 		vBool    bool
@@ -358,4 +342,17 @@ func decode(dst reflect.Value, src interface{}) (err error) {
 	}
 
 	return nil
+}
+
+func castRVars(val interface{}) (out RVars, err error) {
+	val = UntypedValue(val)
+
+	switch c := val.(type) {
+	case *Vars:
+		return c.value, nil
+	case RVars:
+		return c, nil
+	}
+
+	return nil, fmt.Errorf("unable to cast type %T to %T", val, out)
 }

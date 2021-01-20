@@ -10,38 +10,117 @@ package {{ .Package }}
 
 {{ if .Imports }}
 import (
+	"context"
+	"fmt"
 {{- range .Imports }}
   {{ normalizeImport . }}
 {{- end }}
 {{- if ne .Package "expr" }}
-	"github.com/cortezaproject/corteza-server/pkg/expr"
+	. "github.com/cortezaproject/corteza-server/pkg/expr"
 {{- end }}
 )
 {{ end }}
 
 
-{{ $TypedValue := "TypedValue" }}
-{{ if ne .Package "expr" }}
-	{{ $TypedValue = "expr.TypedValue" }}
-{{ end }}
+var _ = context.Background
+var _ = fmt.Errorf
 
-{{ range $exprType, $nativeType := .Types }}
-// {{ $exprType }} is an expression type, wrapper for {{ $nativeType }} type
-type {{ $exprType }} struct{ value {{ $nativeType }} }
+
+{{ range $exprType, $def := .Types }}
+// {{ $exprType }} is an expression type, wrapper for {{ $def.As }} type
+type {{ $exprType }} struct{ value {{ $def.As }} }
 
 // New{{ $exprType }} creates new instance of {{ $exprType }} expression type
-func New{{ $exprType }}(new interface{}) ({{ $TypedValue }}, error) {
-	t := &{{ $exprType }}{}
-	return t, t.Set(new)
+func New{{ $exprType }}(val interface{}) (*{{ $exprType }}, error) {
+	if c, err := {{ $def.CastFn }}(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create {{ $exprType }}: %w", err)
+	} else {
+		return &{{ $exprType }}{value: c}, nil
+	}
 }
 
-// Returns underlying value on {{ $exprType }}
+
+// Return underlying value on {{ $exprType }}
 func (t {{ $exprType }}) Get() interface{}                         { return t.value }
 
-// Returns type name
+// Return type name
 func ({{ $exprType }}) Type() string                               { return "{{ $.Prefix }}{{ $exprType }}" }
 
-// Casts value to {{ $nativeType }}
-func ({{ $exprType }}) Cast(value interface{}) ({{ $TypedValue }}, error) { return New{{ $exprType }}(value) }
+// Convert value to {{ $def.As }}
+func ({{ $exprType }}) Cast(val interface{}) (TypedValue, error) {
+	return New{{ $exprType }}(val)
+}
+
+// Set updates {{ $exprType }}
+func (t *{{ $exprType }}) Set(val interface{}) (error) {
+	// Using {{ unexport $exprType "ctor" }} to do the casting for us
+	if c, err := {{ $def.CastFn }}(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
+
+{{ if $def.BuiltInCastFn }}
+// {{ $def.CastFn }} arbitrary value to casts {{ $exprType }}
+func {{ $def.CastFn }}(val interface{}) ({{ $def.As }}, error) {
+	val = UntypedValue(val)
+
+	switch val := val.(type) {
+	case {{ $def.As }}:
+		return val, nil
+	{{ if $def.Struct }}
+	case Iterator:
+		res := &{{ removePtr $def.As }}{}
+		err := val.Each(func(k string, v TypedValue) error {
+			return {{ unexport $exprType "assigner" }}(res, k, v)
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		return res, nil
+	{{ end }}
+	}
+	return {{ $def.Default }}, fmt.Errorf("unable to cast type %T to {{ removePtr $def.As }}", val)
+}
+{{ end }}
+
+{{ if $def.Struct }}
+// SelectGVal Implements gval.Selector requirements
+func (t {{ $exprType }}) SelectGVal(ctx context.Context, k string) (interface{}, error) {
+	return {{ unexport $exprType "selector" }}(t.value, k)
+}
+
+// {{ unexport $exprType "selector" }} is field accessor for {{ $def.As }}
+func {{ unexport $exprType "selector" }}(res {{ $def.As }}, k string) (interface{}, error) {
+switch k {
+{{- range $def.Struct }}
+	{{- if .ExprType }}
+	case {{ printf "%q" .Name }}{{ if .Alias }}, {{ printf "%q" .Alias }}{{ end }}:
+		return {{ export "New" .ExprType }}(res.{{ export .Name }})
+	{{- end }}
+{{- end }}
+}
+	return nil, fmt.Errorf("unknown field '%s'", k)
+}
+
+// {{ unexport $exprType "assigner" }} is field value setter for {{ $def.As }}
+func {{ unexport $exprType "assigner" }}(res {{ $def.As }}, k string, val interface{}) (err error) {
+	switch k {
+{{- range $def.Struct }}
+	{{- if not .Readonly }}
+	case {{ printf "%q" .Name }}{{ if .Alias }}, {{ printf "%q" .Alias }}{{ end }}:
+		return {{ export "Safe" .ExprType "Set" }}(&res.{{ export .Name }}, val)
+	{{- end }}
+{{- end }}
+	}
+
+	return fmt.Errorf("unknown field '%s'", k)
+}
+{{ end }}
 
 {{ end }}

@@ -64,10 +64,10 @@ func (e *Expr) SetType(fn func(string) (expr.Type, error)) error {
 
 func (e Expr) GetExpr() string              { return e.Expr }
 func (e *Expr) SetEval(eval expr.Evaluable) { e.eval = eval }
-func (e Expr) Eval(ctx context.Context, scope expr.Vars) (interface{}, error) {
+func (e Expr) Eval(ctx context.Context, scope *expr.Vars) (interface{}, error) {
 	return e.eval.Eval(ctx, scope)
 }
-func (e Expr) Test(ctx context.Context, scope expr.Vars) (bool, error) {
+func (e Expr) Test(ctx context.Context, scope *expr.Vars) (bool, error) {
 	return e.eval.Test(ctx, scope)
 }
 
@@ -80,14 +80,14 @@ func (set ExprSet) GetByTarget(t string) *Expr {
 	return nil
 }
 
-func (set ExprSet) Validate(ctx context.Context, in expr.Vars) (TestSet, error) {
+func (set ExprSet) Validate(ctx context.Context, in *expr.Vars) (TestSet, error) {
 	var (
 		out TestSet
 		vv  TestSet
 		err error
 
 		// Copy/create scope
-		scope = expr.Vars.Merge(in)
+		scope = (&expr.Vars{}).Merge(in)
 	)
 
 	for _, e := range set {
@@ -103,21 +103,18 @@ func (set ExprSet) Validate(ctx context.Context, in expr.Vars) (TestSet, error) 
 }
 
 // Eval on expression set (ExprSet) evaluates all expressions in the set and returns new scope with all set targets
-func (set ExprSet) Eval(ctx context.Context, in expr.Vars) (expr.Vars, error) {
+func (set ExprSet) Eval(ctx context.Context, in *expr.Vars) (*expr.Vars, error) {
 	var (
 		err error
 
 		// Copy input to scope
-		scope = expr.Vars.Merge(in)
+		scope = (&expr.Vars{}).Merge(in)
 
 		// Prepare output scope
-		out = expr.Vars{}
+		out = &expr.Vars{}
 
 		// Untyped evaluation result
 		value interface{}
-
-		// Base target
-		base string
 
 		knownType = func(p expr.Type) bool {
 			return p != nil && p.Type() != expr.Any{}.Type() && p.Type() != expr.Unresolved{}.Type()
@@ -139,7 +136,7 @@ func (set ExprSet) Eval(ctx context.Context, in expr.Vars) (expr.Vars, error) {
 					return errors.NotFound("variable %q does not exist", e.Source)
 				}
 
-				value = scope[e.Source]
+				value, _ = expr.Select(scope, e.Source)
 				return
 			}
 
@@ -176,7 +173,6 @@ func (set ExprSet) Eval(ctx context.Context, in expr.Vars) (expr.Vars, error) {
 
 		if e.typ != nil {
 			if !knownType(typedValue) {
-				println(e.Target, "fixed + unknown")
 				// Expression has fixed type but value does not
 				// cast the value of evaluation to type of the expression
 				if typedValue, err = e.typ.Cast(value); err != nil {
@@ -184,7 +180,6 @@ func (set ExprSet) Eval(ctx context.Context, in expr.Vars) (expr.Vars, error) {
 				}
 			} else if e.typ.Type() != typedValue.Type() && e.typ.Type() != (expr.Any{}).Type() {
 				//
-				println(e.Target, "fixed + fixed")
 				if typedValue, err = e.typ.Cast(value); err != nil {
 					return nil, err
 				}
@@ -195,7 +190,7 @@ func (set ExprSet) Eval(ctx context.Context, in expr.Vars) (expr.Vars, error) {
 		//
 		// Set() fn handles multi-level path (eg "base.level1.level2")
 		// that can set result of the expression deep into scope's value
-		if err = scope.Set(typedValue, expr.Path(e.Target)...); err != nil {
+		if err = expr.Set(scope, e.Target, typedValue); err != nil {
 			return nil, err
 		}
 
@@ -204,8 +199,8 @@ func (set ExprSet) Eval(ctx context.Context, in expr.Vars) (expr.Vars, error) {
 		//
 		// This ensures us that the entire variable
 		// from the original scope will be present in the output
-		base = expr.Path(e.Target)[0]
-		out[base] = scope[base]
+		scope.Copy(out, expr.PathBase(e.Target))
+
 	}
 
 	return out, nil

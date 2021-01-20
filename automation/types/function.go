@@ -11,13 +11,13 @@ import (
 )
 
 type (
-	FunctionHandler func(ctx context.Context, in expr.Vars) (expr.Vars, error)
-	IteratorHandler func(ctx context.Context, in expr.Vars) (wfexec.IteratorHandler, error)
+	FunctionHandler func(ctx context.Context, in *expr.Vars) (*expr.Vars, error)
+	IteratorHandler func(ctx context.Context, in *expr.Vars) (wfexec.IteratorHandler, error)
 
 	// workflow functions are defined in the core code and through plugins
 	Function struct {
 		Ref        string        `json:"ref,omitempty"`
-		Type       string        `json:"type,omitempty"`
+		Kind       string        `json:"kind,omitempty"`
 		Meta       *FunctionMeta `json:"meta,omitempty"`
 		Parameters ParamSet      `json:"parameters,omitempty"`
 		Results    ParamSet      `json:"results,omitempty"`
@@ -50,13 +50,13 @@ type (
 )
 
 const (
-	FTypeStandard = ""
-	FTypeIterator = "iterator"
+	FunctionKindFunction = "function"
+	FunctionKindIterator = "iterator"
 )
 
 func FunctionStep(def *Function, arguments, results ExprSet) (*functionStep, error) {
-	if def.Type != "" {
-		return nil, fmt.Errorf("expecting non-iterator function")
+	if def.Kind != FunctionKindFunction {
+		return nil, fmt.Errorf("expecting function kind")
 	}
 
 	return &functionStep{def: def, arguments: arguments, results: results}, nil
@@ -65,7 +65,7 @@ func FunctionStep(def *Function, arguments, results ExprSet) (*functionStep, err
 func (f *functionStep) Exec(ctx context.Context, r *wfexec.ExecRequest) (wfexec.ExecResponse, error) {
 	var (
 		started       = time.Now()
-		args, results expr.Vars
+		args, results *expr.Vars
 		err           error
 
 		log = logger.ContextValue(ctx, zap.NewNop()).With(
@@ -114,8 +114,8 @@ func (f *functionStep) Exec(ctx context.Context, r *wfexec.ExecRequest) (wfexec.
 }
 
 func IteratorStep(def *Function, arguments ExprSet, next, exit wfexec.Step) (*iteratorStep, error) {
-	if def.Type != FTypeIterator {
-		return nil, fmt.Errorf("expecting iterator function")
+	if def.Kind != FunctionKindIterator {
+		return nil, fmt.Errorf("expecting iterator kind")
 	}
 
 	return &iteratorStep{def: def, arguments: arguments, next: next, exit: exit}, nil
@@ -124,7 +124,7 @@ func IteratorStep(def *Function, arguments ExprSet, next, exit wfexec.Step) (*it
 func (f *iteratorStep) Exec(ctx context.Context, r *wfexec.ExecRequest) (wfexec.ExecResponse, error) {
 	var (
 		started = time.Now()
-		args    expr.Vars
+		args    *expr.Vars
 		err     error
 		ih      wfexec.IteratorHandler
 
@@ -160,10 +160,10 @@ func (f *iteratorStep) Exec(ctx context.Context, r *wfexec.ExecRequest) (wfexec.
 	return wfexec.GenericIterator(f, f.next, f.exit, ih), nil
 }
 
-func (f *iteratorStep) EvalResults(ctx context.Context, results expr.Vars) (out expr.Vars, err error) {
+func (f *iteratorStep) EvalResults(ctx context.Context, results *expr.Vars) (out *expr.Vars, err error) {
 	if len(f.results) == 0 {
 		// No results defined, nothing to return
-		return expr.Vars{}, nil
+		return &expr.Vars{}, nil
 	}
 
 	return f.results.Eval(ctx, results)

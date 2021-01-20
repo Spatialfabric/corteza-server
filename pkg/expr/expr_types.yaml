@@ -2,18 +2,20 @@ package: expr
 imports:
   - io
   - time
+  - github.com/spf13/cast
 
 types:
-  Any:             'interface{}'
-  Boolean:         'bool'
-  ID:              'uint64'
-  Integer:         'int64'
-  UnsignedInteger: 'uint64'
-  Float:           'float64'
-  String:          'string'
-  Handle:          'string'
-  DateTime:        '*time.Time'
-  Duration:        'time.Duration'
-  KV:              'map[string]string'
-  KVV:             'map[string][]string'
-  Reader:          'io.Reader'
+  Any:             { as: 'interface{}',                     castFn: castAny }
+  Vars:            { as: 'RVars',                           castFn: castRVars }
+  Boolean:         { as: 'bool',          default: 'false', castFn: cast.ToBoolE }
+  ID:              { as: 'uint64',        default: '0',     castFn: cast.ToUint64E }
+  Integer:         { as: 'int64' ,        default: '0',     castFn: cast.ToInt64E }
+  UnsignedInteger: { as: 'uint64',        default: '0',     castFn: cast.ToUint64E }
+  Float:           { as: 'float64',       default: '0',     castFn: cast.ToFloat64E }
+  String:          { as: 'string' ,       default: '""',    castFn: cast.ToStringE }
+  Handle:          { as: 'string' ,       default: '""',    castFn: cast.ToStringE }
+  DateTime:        { as: '*time.Time',                      castFn: castDateTime }
+  Duration:        { as: 'time.Duration', default: '0',     castFn: cast.ToDurationE }
+  KV:              { as: 'map[string]string',               castFn: castKV }
+  KVV:             { as: 'map[string][]string',             castFn: castKVV }
+  Reader:          { as: 'io.Reader',                       castFn: castReader }

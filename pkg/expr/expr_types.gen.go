@@ -9,240 +9,502 @@ package expr
 // pkg/expr/expr_types.yaml
 
 import (
+	"context"
+	"fmt"
+	"github.com/spf13/cast"
 	"io"
 	"time"
 )
+
+var _ = context.Background
+var _ = fmt.Errorf
 
 // Any is an expression type, wrapper for interface{} type
 type Any struct{ value interface{} }
 
 // NewAny creates new instance of Any expression type
-func NewAny(new interface{}) (TypedValue, error) {
-	t := &Any{}
-	return t, t.Set(new)
+func NewAny(val interface{}) (*Any, error) {
+	if c, err := castAny(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Any: %w", err)
+	} else {
+		return &Any{value: c}, nil
+	}
 }
 
-// Returns underlying value on Any
+// Return underlying value on Any
 func (t Any) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (Any) Type() string { return "Any" }
 
-// Casts value to interface{}
-func (Any) Cast(value interface{}) (TypedValue, error) { return NewAny(value) }
+// Convert value to interface{}
+func (Any) Cast(val interface{}) (TypedValue, error) {
+	return NewAny(val)
+}
+
+// Set updates Any
+func (t *Any) Set(val interface{}) error {
+	// Using anyCtor to do the casting for us
+	if c, err := castAny(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // Boolean is an expression type, wrapper for bool type
 type Boolean struct{ value bool }
 
 // NewBoolean creates new instance of Boolean expression type
-func NewBoolean(new interface{}) (TypedValue, error) {
-	t := &Boolean{}
-	return t, t.Set(new)
+func NewBoolean(val interface{}) (*Boolean, error) {
+	if c, err := cast.ToBoolE(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Boolean: %w", err)
+	} else {
+		return &Boolean{value: c}, nil
+	}
 }
 
-// Returns underlying value on Boolean
+// Return underlying value on Boolean
 func (t Boolean) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (Boolean) Type() string { return "Boolean" }
 
-// Casts value to bool
-func (Boolean) Cast(value interface{}) (TypedValue, error) { return NewBoolean(value) }
+// Convert value to bool
+func (Boolean) Cast(val interface{}) (TypedValue, error) {
+	return NewBoolean(val)
+}
+
+// Set updates Boolean
+func (t *Boolean) Set(val interface{}) error {
+	// Using booleanCtor to do the casting for us
+	if c, err := cast.ToBoolE(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // DateTime is an expression type, wrapper for *time.Time type
 type DateTime struct{ value *time.Time }
 
 // NewDateTime creates new instance of DateTime expression type
-func NewDateTime(new interface{}) (TypedValue, error) {
-	t := &DateTime{}
-	return t, t.Set(new)
+func NewDateTime(val interface{}) (*DateTime, error) {
+	if c, err := castDateTime(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create DateTime: %w", err)
+	} else {
+		return &DateTime{value: c}, nil
+	}
 }
 
-// Returns underlying value on DateTime
+// Return underlying value on DateTime
 func (t DateTime) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (DateTime) Type() string { return "DateTime" }
 
-// Casts value to *time.Time
-func (DateTime) Cast(value interface{}) (TypedValue, error) { return NewDateTime(value) }
+// Convert value to *time.Time
+func (DateTime) Cast(val interface{}) (TypedValue, error) {
+	return NewDateTime(val)
+}
+
+// Set updates DateTime
+func (t *DateTime) Set(val interface{}) error {
+	// Using dateTimeCtor to do the casting for us
+	if c, err := castDateTime(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // Duration is an expression type, wrapper for time.Duration type
 type Duration struct{ value time.Duration }
 
 // NewDuration creates new instance of Duration expression type
-func NewDuration(new interface{}) (TypedValue, error) {
-	t := &Duration{}
-	return t, t.Set(new)
+func NewDuration(val interface{}) (*Duration, error) {
+	if c, err := cast.ToDurationE(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Duration: %w", err)
+	} else {
+		return &Duration{value: c}, nil
+	}
 }
 
-// Returns underlying value on Duration
+// Return underlying value on Duration
 func (t Duration) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (Duration) Type() string { return "Duration" }
 
-// Casts value to time.Duration
-func (Duration) Cast(value interface{}) (TypedValue, error) { return NewDuration(value) }
+// Convert value to time.Duration
+func (Duration) Cast(val interface{}) (TypedValue, error) {
+	return NewDuration(val)
+}
+
+// Set updates Duration
+func (t *Duration) Set(val interface{}) error {
+	// Using durationCtor to do the casting for us
+	if c, err := cast.ToDurationE(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // Float is an expression type, wrapper for float64 type
 type Float struct{ value float64 }
 
 // NewFloat creates new instance of Float expression type
-func NewFloat(new interface{}) (TypedValue, error) {
-	t := &Float{}
-	return t, t.Set(new)
+func NewFloat(val interface{}) (*Float, error) {
+	if c, err := cast.ToFloat64E(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Float: %w", err)
+	} else {
+		return &Float{value: c}, nil
+	}
 }
 
-// Returns underlying value on Float
+// Return underlying value on Float
 func (t Float) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (Float) Type() string { return "Float" }
 
-// Casts value to float64
-func (Float) Cast(value interface{}) (TypedValue, error) { return NewFloat(value) }
+// Convert value to float64
+func (Float) Cast(val interface{}) (TypedValue, error) {
+	return NewFloat(val)
+}
+
+// Set updates Float
+func (t *Float) Set(val interface{}) error {
+	// Using floatCtor to do the casting for us
+	if c, err := cast.ToFloat64E(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // Handle is an expression type, wrapper for string type
 type Handle struct{ value string }
 
 // NewHandle creates new instance of Handle expression type
-func NewHandle(new interface{}) (TypedValue, error) {
-	t := &Handle{}
-	return t, t.Set(new)
+func NewHandle(val interface{}) (*Handle, error) {
+	if c, err := cast.ToStringE(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Handle: %w", err)
+	} else {
+		return &Handle{value: c}, nil
+	}
 }
 
-// Returns underlying value on Handle
+// Return underlying value on Handle
 func (t Handle) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (Handle) Type() string { return "Handle" }
 
-// Casts value to string
-func (Handle) Cast(value interface{}) (TypedValue, error) { return NewHandle(value) }
+// Convert value to string
+func (Handle) Cast(val interface{}) (TypedValue, error) {
+	return NewHandle(val)
+}
+
+// Set updates Handle
+func (t *Handle) Set(val interface{}) error {
+	// Using handleCtor to do the casting for us
+	if c, err := cast.ToStringE(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // ID is an expression type, wrapper for uint64 type
 type ID struct{ value uint64 }
 
 // NewID creates new instance of ID expression type
-func NewID(new interface{}) (TypedValue, error) {
-	t := &ID{}
-	return t, t.Set(new)
+func NewID(val interface{}) (*ID, error) {
+	if c, err := cast.ToUint64E(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create ID: %w", err)
+	} else {
+		return &ID{value: c}, nil
+	}
 }
 
-// Returns underlying value on ID
+// Return underlying value on ID
 func (t ID) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (ID) Type() string { return "ID" }
 
-// Casts value to uint64
-func (ID) Cast(value interface{}) (TypedValue, error) { return NewID(value) }
+// Convert value to uint64
+func (ID) Cast(val interface{}) (TypedValue, error) {
+	return NewID(val)
+}
+
+// Set updates ID
+func (t *ID) Set(val interface{}) error {
+	// Using iDCtor to do the casting for us
+	if c, err := cast.ToUint64E(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // Integer is an expression type, wrapper for int64 type
 type Integer struct{ value int64 }
 
 // NewInteger creates new instance of Integer expression type
-func NewInteger(new interface{}) (TypedValue, error) {
-	t := &Integer{}
-	return t, t.Set(new)
+func NewInteger(val interface{}) (*Integer, error) {
+	if c, err := cast.ToInt64E(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Integer: %w", err)
+	} else {
+		return &Integer{value: c}, nil
+	}
 }
 
-// Returns underlying value on Integer
+// Return underlying value on Integer
 func (t Integer) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (Integer) Type() string { return "Integer" }
 
-// Casts value to int64
-func (Integer) Cast(value interface{}) (TypedValue, error) { return NewInteger(value) }
+// Convert value to int64
+func (Integer) Cast(val interface{}) (TypedValue, error) {
+	return NewInteger(val)
+}
+
+// Set updates Integer
+func (t *Integer) Set(val interface{}) error {
+	// Using integerCtor to do the casting for us
+	if c, err := cast.ToInt64E(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // KV is an expression type, wrapper for map[string]string type
 type KV struct{ value map[string]string }
 
 // NewKV creates new instance of KV expression type
-func NewKV(new interface{}) (TypedValue, error) {
-	t := &KV{}
-	return t, t.Set(new)
+func NewKV(val interface{}) (*KV, error) {
+	if c, err := castKV(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create KV: %w", err)
+	} else {
+		return &KV{value: c}, nil
+	}
 }
 
-// Returns underlying value on KV
+// Return underlying value on KV
 func (t KV) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (KV) Type() string { return "KV" }
 
-// Casts value to map[string]string
-func (KV) Cast(value interface{}) (TypedValue, error) { return NewKV(value) }
+// Convert value to map[string]string
+func (KV) Cast(val interface{}) (TypedValue, error) {
+	return NewKV(val)
+}
+
+// Set updates KV
+func (t *KV) Set(val interface{}) error {
+	// Using kVCtor to do the casting for us
+	if c, err := castKV(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // KVV is an expression type, wrapper for map[string][]string type
 type KVV struct{ value map[string][]string }
 
 // NewKVV creates new instance of KVV expression type
-func NewKVV(new interface{}) (TypedValue, error) {
-	t := &KVV{}
-	return t, t.Set(new)
+func NewKVV(val interface{}) (*KVV, error) {
+	if c, err := castKVV(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create KVV: %w", err)
+	} else {
+		return &KVV{value: c}, nil
+	}
 }
 
-// Returns underlying value on KVV
+// Return underlying value on KVV
 func (t KVV) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (KVV) Type() string { return "KVV" }
 
-// Casts value to map[string][]string
-func (KVV) Cast(value interface{}) (TypedValue, error) { return NewKVV(value) }
+// Convert value to map[string][]string
+func (KVV) Cast(val interface{}) (TypedValue, error) {
+	return NewKVV(val)
+}
+
+// Set updates KVV
+func (t *KVV) Set(val interface{}) error {
+	// Using kVVCtor to do the casting for us
+	if c, err := castKVV(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // Reader is an expression type, wrapper for io.Reader type
 type Reader struct{ value io.Reader }
 
 // NewReader creates new instance of Reader expression type
-func NewReader(new interface{}) (TypedValue, error) {
-	t := &Reader{}
-	return t, t.Set(new)
+func NewReader(val interface{}) (*Reader, error) {
+	if c, err := castReader(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Reader: %w", err)
+	} else {
+		return &Reader{value: c}, nil
+	}
 }
 
-// Returns underlying value on Reader
+// Return underlying value on Reader
 func (t Reader) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (Reader) Type() string { return "Reader" }
 
-// Casts value to io.Reader
-func (Reader) Cast(value interface{}) (TypedValue, error) { return NewReader(value) }
+// Convert value to io.Reader
+func (Reader) Cast(val interface{}) (TypedValue, error) {
+	return NewReader(val)
+}
+
+// Set updates Reader
+func (t *Reader) Set(val interface{}) error {
+	// Using readerCtor to do the casting for us
+	if c, err := castReader(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // String is an expression type, wrapper for string type
 type String struct{ value string }
 
 // NewString creates new instance of String expression type
-func NewString(new interface{}) (TypedValue, error) {
-	t := &String{}
-	return t, t.Set(new)
+func NewString(val interface{}) (*String, error) {
+	if c, err := cast.ToStringE(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create String: %w", err)
+	} else {
+		return &String{value: c}, nil
+	}
 }
 
-// Returns underlying value on String
+// Return underlying value on String
 func (t String) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (String) Type() string { return "String" }
 
-// Casts value to string
-func (String) Cast(value interface{}) (TypedValue, error) { return NewString(value) }
+// Convert value to string
+func (String) Cast(val interface{}) (TypedValue, error) {
+	return NewString(val)
+}
+
+// Set updates String
+func (t *String) Set(val interface{}) error {
+	// Using stringCtor to do the casting for us
+	if c, err := cast.ToStringE(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
 
 // UnsignedInteger is an expression type, wrapper for uint64 type
 type UnsignedInteger struct{ value uint64 }
 
 // NewUnsignedInteger creates new instance of UnsignedInteger expression type
-func NewUnsignedInteger(new interface{}) (TypedValue, error) {
-	t := &UnsignedInteger{}
-	return t, t.Set(new)
+func NewUnsignedInteger(val interface{}) (*UnsignedInteger, error) {
+	if c, err := cast.ToUint64E(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create UnsignedInteger: %w", err)
+	} else {
+		return &UnsignedInteger{value: c}, nil
+	}
 }
 
-// Returns underlying value on UnsignedInteger
+// Return underlying value on UnsignedInteger
 func (t UnsignedInteger) Get() interface{} { return t.value }
 
-// Returns type name
+// Return type name
 func (UnsignedInteger) Type() string { return "UnsignedInteger" }
 
-// Casts value to uint64
-func (UnsignedInteger) Cast(value interface{}) (TypedValue, error) { return NewUnsignedInteger(value) }
+// Convert value to uint64
+func (UnsignedInteger) Cast(val interface{}) (TypedValue, error) {
+	return NewUnsignedInteger(val)
+}
+
+// Set updates UnsignedInteger
+func (t *UnsignedInteger) Set(val interface{}) error {
+	// Using unsignedIntegerCtor to do the casting for us
+	if c, err := cast.ToUint64E(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}
+
+// Vars is an expression type, wrapper for RVars type
+type Vars struct{ value RVars }
+
+// NewVars creates new instance of Vars expression type
+func NewVars(val interface{}) (*Vars, error) {
+	if c, err := castRVars(UntypedValue(val)); err != nil {
+		return nil, fmt.Errorf("unable to create Vars: %w", err)
+	} else {
+		return &Vars{value: c}, nil
+	}
+}
+
+// Return underlying value on Vars
+func (t Vars) Get() interface{} { return t.value }
+
+// Return type name
+func (Vars) Type() string { return "Vars" }
+
+// Convert value to RVars
+func (Vars) Cast(val interface{}) (TypedValue, error) {
+	return NewVars(val)
+}
+
+// Set updates Vars
+func (t *Vars) Set(val interface{}) error {
+	// Using varsCtor to do the casting for us
+	if c, err := castRVars(UntypedValue(val)); err != nil {
+		return err
+	} else {
+		t.value = c
+	}
+
+	return nil
+}

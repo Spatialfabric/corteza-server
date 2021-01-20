@@ -22,25 +22,25 @@ func TestExprSet_Eval(t *testing.T) {
 		cc = []struct {
 			name   string
 			set    ExprSet
-			input  expr.Vars
-			output expr.Vars
+			input  expr.RVars
+			output expr.RVars
 			err    string
 		}{
 			{
 				name:   "empty",
 				set:    ExprSet{},
-				output: expr.Vars{},
+				output: nil,
 			},
 			{
 				name:   "constant assignment",
 				set:    ExprSet{&Expr{Target: "foo", Expr: `"bar"`}},
-				output: expr.Vars{"foo": etv(expr.NewAny("bar"))},
+				output: expr.RVars{"foo": etv(expr.NewAny("bar"))},
 			},
 			{
 				name:   "vars with path",
 				set:    ExprSet{&Expr{Target: "l1.l2", Expr: `"bar"`}},
-				input:  expr.Vars{"l1": &expr.Vars{}},
-				output: expr.Vars{"l1": &expr.Vars{"l2": etv(expr.NewAny("bar"))}},
+				input:  expr.RVars{"l1": expr.RVars{}.Vars()},
+				output: expr.RVars{"l1": expr.RVars{"l2": etv(expr.NewAny("bar"))}.Vars()},
 			},
 			{
 				name: "copy vars with same types",
@@ -48,7 +48,7 @@ func TestExprSet_Eval(t *testing.T) {
 					&Expr{Target: "aa", Value: "vv", typ: &expr.String{}},
 					&Expr{Target: "bb", Source: "aa", typ: &expr.String{}},
 				},
-				output: expr.Vars{
+				output: expr.RVars{
 					"aa": etv(expr.NewString("vv")),
 					"bb": etv(expr.NewString("vv")),
 				},
@@ -59,7 +59,7 @@ func TestExprSet_Eval(t *testing.T) {
 					&Expr{Target: "aa", Value: "should be always String", typ: &expr.String{}},
 					&Expr{Target: "bb", Source: "aa"},
 				},
-				output: expr.Vars{
+				output: expr.RVars{
 					"aa": etv(expr.NewString("should be always String")),
 					"bb": etv(expr.NewString("should be always String")),
 				},
@@ -70,7 +70,7 @@ func TestExprSet_Eval(t *testing.T) {
 					&Expr{Target: "aa", Value: "42", typ: &expr.String{}},
 					&Expr{Target: "bb", Source: "aa", typ: &expr.Integer{}},
 				},
-				output: expr.Vars{
+				output: expr.RVars{
 					"aa": etv(expr.NewString("42")),
 					"bb": etv(expr.NewInteger(42)),
 				},
@@ -102,16 +102,18 @@ func TestExprSet_Eval(t *testing.T) {
 			}
 
 			var (
-				output, err = c.set.Eval(ctx, c.input)
+				aux, _      = expr.NewVars(c.input)
+				output, err = c.set.Eval(ctx, aux)
 			)
 
 			if c.err == "" {
 				req.NoError(err)
 			} else {
 				req.Error(err, c.err)
+				return
 			}
 
-			req.Equal(c.output, output)
+			req.Equal(c.output.Vars(), output)
 		})
 	}
 }

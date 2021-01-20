@@ -106,6 +106,10 @@ func unexport(pp ...string) (out string) {
 	return strings.ToLower(out[:1]) + out[1:]
 }
 
+func removePtr(name string) string {
+	return strings.TrimLeft(name, "*")
+}
+
 func toggleExport(e bool, pp ...string) (out string) {
 	if e {
 		return export(pp...)

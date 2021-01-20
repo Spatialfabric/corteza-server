@@ -75,6 +75,7 @@ func Proc() {
 				"camelCase":       camelCase,
 				"export":          export,
 				"unexport":        unexport,
+				"removePtr":       removePtr,
 				"toggleExport":    toggleExport,
 				"toLower":         strings.ToLower,
 				"toUpper":         strings.ToUpper,

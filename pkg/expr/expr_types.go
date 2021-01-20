@@ -1,12 +1,14 @@
 package expr
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/cortezaproject/corteza-server/pkg/handle"
+	"github.com/cortezaproject/corteza-server/pkg/errors"
 	"github.com/spf13/cast"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -22,7 +24,7 @@ type Unresolved struct {
 func NewUnresolved(typ string, val interface{}) (TypedValue, error) {
 	return &Unresolved{
 		typ:   typ,
-		value: UnwindTyped(val),
+		value: UntypedValue(val),
 	}, nil
 }
 
@@ -33,236 +35,101 @@ func (t Unresolved) Get() interface{} { return t.value }
 func (t Unresolved) Type() string { return t.typ }
 
 // Casts value to interface{}
-func (Unresolved) Cast(value interface{}) (TypedValue, error) {
-	return nil, fmt.Errorf("can not cast unresolved")
+func (Unresolved) Cast(interface{}) (TypedValue, error) {
+	return nil, fmt.Errorf("can not cast to unresolved type")
 }
 
-func (t *Unresolved) Set(new interface{}, pp ...string) (err error) {
+func (t *Unresolved) Set(interface{}) (err error) {
 	return fmt.Errorf("can not set on unresolved type")
 }
 
-func (t *Any) Set(new interface{}, pp ...string) (err error) {
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		return
-	}
-
-	t.value = UnwindTyped(new)
-	return
+func castAny(val interface{}) (interface{}, error) {
+	return val, nil
 }
 
-func (t *Boolean) Set(new interface{}, pp ...string) (err error) {
-	var aux bool
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		return
-	}
+func castDateTime(val interface{}) (out *time.Time, err error) {
+	val = UntypedValue(val)
+	switch casted := val.(type) {
+	case *time.Time:
+		return casted, nil
+	case time.Time:
+		return &casted, nil
+	default:
+		var c time.Time
+		if c, err = cast.ToTimeE(casted); err != nil {
+			return nil, err
+		}
 
-	if tv, is := new.(TypedValue); is {
-		new = tv.Get()
+		return &c, nil
 	}
-
-	if aux, err = cast.ToBoolE(new); err != nil {
-		return
-	}
-
-	t.value = aux
-	return
 }
 
-func (t *ID) Set(new interface{}, pp ...string) (err error) {
-	return SetIDWithPath(&t.value, new, pp...)
-}
-
-func (t *Integer) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
-
-	var aux int64
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		return
-	}
-
-	if tv, is := new.(TypedValue); is {
-		new = tv.Get()
-	}
-
-	if aux, err = cast.ToInt64E(new); err != nil {
-		return
-	}
-
-	t.value = aux
-	return
-}
-
-func (t *UnsignedInteger) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
-
-	var aux uint64
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		return
-	}
-
-	if tv, is := new.(TypedValue); is {
-		new = tv.Get()
-	}
-
-	if aux, err = cast.ToUint64E(new); err != nil {
-		return
-	}
-
-	t.value = aux
-	return
-}
-
-func (t *Float) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
-
-	var aux float64
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		return
-	}
-
-	if aux, err = cast.ToFloat64E(new); err != nil {
-		return
-	}
-
-	t.value = aux
-	return
-}
-
-func (t *String) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
-
-	var aux string
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		panic(err.Error())
-		return
-	}
-
-	if aux, err = cast.ToStringE(new); err != nil {
-		return
-	}
-
-	t.value = aux
-	return
-}
-
-func (t *Handle) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
-
-	var aux string
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		panic(err.Error())
-		return
-	}
-
-	if aux, err = cast.ToStringE(new); err != nil {
-		return
-	}
-
-	if !handle.IsValid(aux) {
-		return fmt.Errorf("invalid handle: %q", aux)
-	}
-
-	t.value = aux
-	return
-}
-
-func (t *DateTime) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
-
-	var aux time.Time
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		return
-	}
-
-	if aux, err = cast.ToTimeE(new); err != nil {
-		return
-	}
-
-	t.value = &aux
-	return
-}
-
-func (t *Duration) Set(new interface{}, pp ...string) (err error) {
-	var aux time.Duration
-	if err = ReqNoPath(t.Type(), pp); err != nil {
-		return
-	}
-
-	if tv, is := new.(TypedValue); is {
-		new = tv.Get()
-	}
-
-	if aux, err = cast.ToDurationE(new); err != nil {
-		return
-	}
-
-	t.value = aux
-	return
-}
-
-func (t *KV) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
-
+func (t *KV) SetFieldValue(key string, val interface{}) error {
 	if t.value == nil {
 		t.value = make(map[string]string)
 	}
 
-	return SetKVWithPath(&t.value, new, pp...)
+	str, err := cast.ToStringE(val)
+	t.value[key] = str
+	return err
 }
 
-func (t *KVV) Set(new interface{}, pp ...string) (err error) {
-	new = UnwindTyped(new)
+func (t *KV) Has(k string) bool {
+	_, has := t.value[k]
+	return has
+}
 
+func (t *KV) Select(k string) (TypedValue, error) {
+	if v, has := t.value[k]; has {
+		return Must(NewString(v)), nil
+	} else {
+		return nil, errors.NotFound("no such key '%s'", k)
+	}
+}
+
+func castKV(val interface{}) (out map[string]string, err error) {
+	val = UntypedValue(val)
+	switch casted := val.(type) {
+	case map[string]string:
+		return casted, nil
+	default:
+		return cast.ToStringMapStringE(casted)
+	}
+}
+
+func (t *KVV) SetFieldValue(key string, val interface{}) error {
 	if t.value == nil {
 		t.value = make(map[string][]string)
 	}
 
-	switch len(pp) {
-	case 0:
-		var aux map[string][]string
-		switch casted := new.(type) {
-		case KVV:
-			aux = casted.value
-		case *KVV:
-			aux = casted.value
-		case http.Header:
-			aux = casted
-		case url.Values:
-			aux = casted
-		default:
-			aux, err = cast.ToStringMapStringSliceE(new)
-			if err != nil {
-				return err
-			}
-		}
-
-		t.value = aux
-	case 1:
-		tmp, err := cast.ToStringSliceE(new)
-		if err != nil {
-			return err
-		}
-
-		t.value[pp[0]] = tmp
-	default:
-		return fmt.Errorf("can not set values to KVV with path deeper than 1 level")
-	}
-
-	return nil
+	str, err := cast.ToStringSliceE(val)
+	t.value[key] = str
+	return err
 }
 
-func (t *Reader) Set(new interface{}, pp ...string) error {
-	new = UnwindTyped(new)
-
-	if err := ReqNoPath(t.Type(), pp); err != nil {
-		return err
+func castKVV(val interface{}) (out map[string][]string, err error) {
+	val = UntypedValue(val)
+	switch casted := val.(type) {
+	case http.Header:
+		return casted, nil
+	case url.Values:
+		return casted, nil
+	default:
+		return cast.ToStringMapStringSliceE(casted)
 	}
+}
 
-	var ok bool
-	t.value, ok = new.(io.Reader)
-	if !ok {
-		return fmt.Errorf("unable to cast %#v of type %T to io.Reader", new, new)
+func castReader(val interface{}) (out io.Reader, err error) {
+	val = UntypedValue(val)
+
+	switch casted := val.(type) {
+	case []byte:
+		return bytes.NewReader(casted), nil
+	case string:
+		return strings.NewReader(casted), nil
+	case io.Reader:
+		return casted, nil
+	default:
+		return nil, fmt.Errorf("unable to cast %T to io.Reader", val)
 	}
-
-	return nil
 }

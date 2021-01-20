@@ -11,14 +11,15 @@ func TestKV_Set(t *testing.T) {
 	var (
 		req = require.New(t)
 
-		vars = &KV{value: map[string]string{
+		vars = KV{value: map[string]string{
 			"k1": "v1",
 			"k2": "v2",
 		}}
 	)
 
-	req.NoError(vars.Set("v11", "k1"))
+	req.NoError(Set(&vars, "k1", "v11"))
 	req.Equal("v11", vars.value["k1"])
+	req.Equal("v2", vars.value["k2"])
 
 }
 
@@ -28,7 +29,7 @@ func TestKVV_Set(t *testing.T) {
 		kvv KVV
 	)
 
-	req.NoError(kvv.Set("bar", "foo"))
+	req.NoError(Set(&kvv, "foo", "bar"))
 	req.Contains(kvv.value, "foo")
 	req.Equal([]string{"bar"}, kvv.value["foo"])
 

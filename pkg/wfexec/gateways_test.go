@@ -8,13 +8,13 @@ import (
 )
 
 func gt(key string, val int64) pathTester {
-	return func(ctx context.Context, variables expr.Vars) (bool, error) {
-		return variables[key].Get().(int64) > val, nil
+	return func(ctx context.Context, variables *expr.Vars) (bool, error) {
+		return expr.Must(expr.Select(variables, key)).Get().(int64) > val, nil
 	}
 }
 
-func makeIntVars(k string, num int) expr.Vars {
-	return expr.Vars{k: expr.Must(expr.NewInteger(num))}
+func makeIntVars(k string, num int) *expr.Vars {
+	return expr.RVars{k: expr.Must(expr.NewInteger(num))}.Vars()
 }
 
 func TestJoinGateway(t *testing.T) {
@@ -37,7 +37,7 @@ func TestJoinGateway(t *testing.T) {
 
 	r, err = gw.Exec(nil, &ExecRequest{Parent: p3})
 	req.NoError(err)
-	req.IsType(expr.Vars{}, r)
+	req.IsType(&expr.Vars{}, r)
 }
 
 func TestForkGateway(t *testing.T) {

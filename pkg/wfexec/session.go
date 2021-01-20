@@ -44,7 +44,7 @@ type (
 		workerTicker *time.Ticker
 
 		// holds final result
-		result expr.Vars
+		result *expr.Vars
 		err    error
 
 		mux *sync.RWMutex
@@ -74,8 +74,8 @@ type (
 		Created   time.Time     `json:"created"`
 		SessionID uint64        `json:"sessionID"`
 		StateID   uint64        `json:"stateID"`
-		Input     expr.Vars     `json:"input"`
-		Scope     expr.Vars     `json:"scope"`
+		Input     *expr.Vars    `json:"input"`
+		Scope     *expr.Vars    `json:"scope"`
 		ParentID  uint64        `json:"parentID"`
 		StepID    uint64        `json:"stepID"`
 		LeadTime  time.Duration `json:"leadTime"`
@@ -88,10 +88,10 @@ type (
 		StateID   uint64
 
 		// Current input received on session resume
-		Input expr.Vars
+		Input *expr.Vars
 
 		// Current scope
-		Scope expr.Vars
+		Scope *expr.Vars
 
 		// Helps with gateway join/merge steps
 		// that needs info about the step it's currently merging
@@ -195,14 +195,14 @@ func (s *Session) Error() error {
 	return s.err
 }
 
-func (s *Session) Result() expr.Vars {
+func (s *Session) Result() *expr.Vars {
 	defer s.mux.RUnlock()
 	s.mux.RLock()
 
 	return s.result
 }
 
-func (s *Session) Exec(ctx context.Context, step Step, scope expr.Vars) error {
+func (s *Session) Exec(ctx context.Context, step Step, scope *expr.Vars) error {
 	if s.g.Len() == 0 {
 		return fmt.Errorf("refusing to execute without steps")
 	}
@@ -211,10 +211,15 @@ func (s *Session) Exec(ctx context.Context, step Step, scope expr.Vars) error {
 		return fmt.Errorf("can not execute step with parents")
 	}
 
+	if scope == nil {
+
+		scope, _ = expr.NewVars(nil)
+	}
+
 	return s.enqueue(ctx, NewState(s, auth.GetIdentityFromContext(ctx), nil, step, scope))
 }
 
-func (s *Session) Resume(ctx context.Context, stateId uint64, input expr.Vars) error {
+func (s *Session) Resume(ctx context.Context, stateId uint64, input *expr.Vars) error {
 	defer s.mux.Unlock()
 	s.mux.Lock()
 
@@ -319,7 +324,7 @@ func (s *Session) worker(ctx context.Context) {
 				s.mux.Lock()
 
 				// making sure result != nil
-				s.result = expr.Vars{}.Merge(st.scope)
+				s.result = (&expr.Vars{}).Merge(st.scope)
 				return
 			}
 
@@ -389,7 +394,7 @@ func (s *Session) queueScheduledSuspended() {
 func (s *Session) exec(ctx context.Context, st *State) {
 	var (
 		result ExecResponse
-		scope  = st.scope
+		scope  = (&expr.Vars{}).Merge(st.scope)
 		next   Steps
 
 		currLoop = st.loopCurr()
@@ -401,22 +406,20 @@ func (s *Session) exec(ctx context.Context, st *State) {
 		log = log.With(zap.Uint64("step", st.step.ID()))
 	}
 
-	defer func() {
-		reason := recover()
-		if reason == nil {
-			return
-		}
-
-		switch reason := reason.(type) {
-		case error:
-			log.Error("workflow session crashed", zap.Error(reason))
-			s.qErr <- fmt.Errorf("session %d step %d crashed: %w", s.id, st.step.ID(), reason)
-		default:
-			log.Error("workflow session crashed", zap.Any("reason", reason))
-			s.qErr <- fmt.Errorf("session %d step %d crashed: %v", s.id, st.step.ID(), reason)
-		}
-
-	}()
+	//defer func() {
+	//	reason := recover()
+	//	if reason == nil {
+	//		return
+	//	}
+	//
+	//	switch reason := reason.(type) {
+	//	case error:
+	//		log.Error("workflow session crashed", zap.Error(reason))
+	//		s.qErr <- fmt.Errorf("session %d step %d crashed: %w", s.id, st.step.ID(), reason)
+	//	default:
+	//		s.qErr <- fmt.Errorf("session %d step %d crashed: %v", s.id, st.step.ID(), reason)
+	//	}
+	//}()
 
 	s.eventHandler(SessionActive, st, s)
 
@@ -454,7 +457,8 @@ func (s *Session) exec(ctx context.Context, st *State) {
 					zap.Uint64("errorHandlerStepId", st.errHandler.ID()),
 					zap.Error(st.err),
 				)
-				scope["error"], _ = expr.NewString(st.err.Error())
+
+				expr.Set(scope, "error", expr.Must(expr.NewString(st.err.Error())))
 
 				// copy error handler & disable it on state to prevent inf. loop
 				// in case of another error in the error-handling branch
@@ -494,7 +498,7 @@ func (s *Session) exec(ctx context.Context, st *State) {
 
 		log.Debug("step executed", zap.String("resultType", fmt.Sprintf("%T", result)))
 		switch result := result.(type) {
-		case expr.Vars:
+		case *expr.Vars:
 			// most common (successful) result
 			// session will continue with configured child steps
 			scope = scope.Merge(result)

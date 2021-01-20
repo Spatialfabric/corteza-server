@@ -13,8 +13,8 @@ type (
 	}
 
 	Evaluable interface {
-		Eval(context.Context, Vars) (interface{}, error)
-		Test(context.Context, Vars) (bool, error)
+		Eval(context.Context, *Vars) (interface{}, error)
+		Test(context.Context, *Vars) (bool, error)
 	}
 
 	Evaluator interface {
@@ -65,11 +65,11 @@ func (p *gvalParser) ParseEvaluators(ee ...Evaluator) error {
 	return nil
 }
 
-func (e *gvalEval) Eval(ctx context.Context, scope Vars) (interface{}, error) {
+func (e *gvalEval) Eval(ctx context.Context, scope *Vars) (interface{}, error) {
 	return e.evaluable(ctx, scope.Dict())
 }
 
-func (e *gvalEval) Test(ctx context.Context, scope Vars) (bool, error) {
+func (e *gvalEval) Test(ctx context.Context, scope *Vars) (bool, error) {
 	return e.evaluable.EvalBool(ctx, scope.Dict())
 }
 

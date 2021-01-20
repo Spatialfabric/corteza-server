@@ -5,8 +5,8 @@ import (
 	"github.com/cortezaproject/corteza-server/pkg/expr"
 )
 
-func ParseWorkflowVariables(ss []string) (p expr.Vars, err error) {
-	p = expr.Vars{}
+func ParseWorkflowVariables(ss []string) (p *expr.Vars, err error) {
+	p = &expr.Vars{}
 	return p, parseStringsInput(ss, &p)
 }
 

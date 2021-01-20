@@ -22,12 +22,12 @@ func TestVars_Decode(t *testing.T) {
 				Unexisting byte
 			}{}
 
-			vars = Vars{
+			vars = RVars{
 				"int":     Must(NewInteger(42)),
 				"STRING":  Must(NewString("foo")),
 				"bool":    Must(NewBoolean(true)),
 				"missing": Must(NewBoolean(true)),
-			}
+			}.Vars()
 		)
 
 		req.NoError(vars.Decode(dst))
@@ -47,11 +47,11 @@ func TestVars_Decode(t *testing.T) {
 				IBool    interface{} `var:"iBool"`
 			}{}
 
-			vars = Vars{
+			vars = RVars{
 				"iString":  Must(NewString("foo")),
 				"iInteger": Must(NewInteger(42)),
 				"iBool":    Must(NewBoolean(true)),
-			}
+			}.Vars()
 		)
 
 		req.NoError(vars.Decode(dst))
@@ -66,10 +66,10 @@ func TestVars_Decode(t *testing.T) {
 				Uint64 uint64
 			}{}
 
-			vars = Vars{
+			vars = RVars{
 				"uint64": Must(NewAny("42")),
 				"int":    Must(NewAny("42")),
-			}
+			}.Vars()
 		)
 
 		dst.Uint64 = 0
@@ -79,26 +79,4 @@ func TestVars_Decode(t *testing.T) {
 		req.Equal(uint64(42), dst.Uint64)
 		req.Equal(int64(42), dst.Int)
 	})
-}
-
-func TestVars_Set(t *testing.T) {
-	var (
-		req = require.New(t)
-
-		vars = Vars{
-			"int": Must(NewInteger(42)),
-			"sub": &Vars{
-				"foo": Must(NewString("foo")),
-			},
-		}
-	)
-
-	req.NoError(vars.Set(Must(NewInteger(123)), "int"))
-	req.Equal(int64(123), vars["int"].(TypedValue).Get().(int64))
-
-	req.NoError(vars.Set(Must(NewString("bar")), "sub", "foo"))
-	req.Equal("bar", (*(vars["sub"]).(*Vars))["foo"].Get().(string))
-
-	req.NoError(vars.Set(&KV{}, "kv"))
-	req.NoError(vars.Set(Must(NewString("bar")), "kv", "foo"))
 }

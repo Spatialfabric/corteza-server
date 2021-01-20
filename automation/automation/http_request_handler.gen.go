@@ -95,7 +95,7 @@ type (
 func (h httpRequestHandler) Send() *atypes.Function {
 	return &atypes.Function{
 		Ref:  "httpRequestSend",
-		Type: "",
+		Kind: "function",
 		Meta: &atypes.FunctionMeta{
 			Short: "Sends HTTP request",
 		},
@@ -184,7 +184,7 @@ func (h httpRequestHandler) Send() *atypes.Function {
 			},
 		},
 
-		Handler: func(ctx context.Context, in expr.Vars) (out expr.Vars, err error) {
+		Handler: func(ctx context.Context, in *expr.Vars) (out *expr.Vars, err error) {
 			var (
 				args = &httpRequestSendArgs{
 					hasUrl:                in.Has("url"),
@@ -221,25 +221,13 @@ func (h httpRequestHandler) Send() *atypes.Function {
 				return
 			}
 
-			out = expr.Vars{}
-			if out["status"], err = h.reg.Type("String").Cast(results.Status); err != nil {
-				return nil, err
-			}
-			if out["statusCode"], err = h.reg.Type("Integer").Cast(results.StatusCode); err != nil {
-				return nil, err
-			}
-			if out["headers"], err = h.reg.Type("KVV").Cast(results.Headers); err != nil {
-				return nil, err
-			}
-			if out["contentLength"], err = h.reg.Type("Integer").Cast(results.ContentLength); err != nil {
-				return nil, err
-			}
-			if out["contentType"], err = h.reg.Type("String").Cast(results.ContentType); err != nil {
-				return nil, err
-			}
-			if out["body"], err = h.reg.Type("Reader").Cast(results.Body); err != nil {
-				return nil, err
-			}
+			out = &expr.Vars{}
+			_ = expr.Set(out, "status", expr.Must(h.reg.Type("String").Cast(results.Status)))
+			_ = expr.Set(out, "statusCode", expr.Must(h.reg.Type("Integer").Cast(results.StatusCode)))
+			_ = expr.Set(out, "headers", expr.Must(h.reg.Type("KVV").Cast(results.Headers)))
+			_ = expr.Set(out, "contentLength", expr.Must(h.reg.Type("Integer").Cast(results.ContentLength)))
+			_ = expr.Set(out, "contentType", expr.Must(h.reg.Type("String").Cast(results.ContentType)))
+			_ = expr.Set(out, "body", expr.Must(h.reg.Type("Reader").Cast(results.Body)))
 
 			return
 		},

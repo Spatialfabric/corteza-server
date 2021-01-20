@@ -77,7 +77,7 @@ type (
 func (h {{ $.Name }}Handler) {{ export .Name }}() *atypes.Function {
 	return &atypes.Function{
 		Ref: {{ printf "%q" ( $REF ) }},
-		Type: {{ printf "%q" .Type }},
+		Kind: {{ printf "%q" .Kind }},
 		{{- if .Meta }}
 		Meta: &atypes.FunctionMeta{
 			{{- if .Meta.Short }}
@@ -143,8 +143,8 @@ func (h {{ $.Name }}Handler) {{ export .Name }}() *atypes.Function {
 		},
 		{{ end }}
 
-		{{ if eq .Type "iterator" }}
-		Iterator: func(ctx context.Context, in expr.Vars) (out wfexec.IteratorHandler, err error) {
+		{{ if eq .Kind "iterator" }}
+		Iterator: func(ctx context.Context, in *expr.Vars) (out wfexec.IteratorHandler, err error) {
 			var (
 				args = &{{ $ARGS }}{
 				{{- range .Params }}
@@ -158,7 +158,7 @@ func (h {{ $.Name }}Handler) {{ export .Name }}() *atypes.Function {
 			return h.{{ .Name }}(ctx, args)
 		},
 		{{ else }}
-		Handler: func(ctx context.Context, in expr.Vars) (out expr.Vars, err error) {
+		Handler: func(ctx context.Context, in *expr.Vars) (out *expr.Vars, err error) {
 			var (
 				args = &{{ $ARGS }}{
 				{{- range .Params }}
@@ -175,12 +175,10 @@ func (h {{ $.Name }}Handler) {{ export .Name }}() *atypes.Function {
 				return
 			}
 
-			out = expr.Vars{}
+			out = &expr.Vars{}
 
 			{{- range .Results }}
-			if out[{{ printf "%q" .Name }}], err = h.reg.Type({{ printf "%q" .WorkflowType }}).Cast(results.{{ export .Name }}); err != nil {
-				return nil, err
-			}
+			_ = expr.Set(out, {{ printf "%q" .Name }}, expr.Must(h.reg.Type({{ printf "%q" .WorkflowType }}).Cast(results.{{ export .Name }})))
 			{{- end }}
 
 			return

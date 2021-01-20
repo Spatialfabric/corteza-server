@@ -15,7 +15,7 @@ type (
 		Is(Step) bool
 
 		// Initialize iterator
-		Start(context.Context, expr.Vars) error
+		Start(context.Context, *expr.Vars) error
 
 		// Break fn is called when loop is forcefully broken
 		Break() Step
@@ -24,17 +24,17 @@ type (
 
 		// Next is called before each iteration and returns
 		// 1st step of the iteration branch and variables that are added to the scope
-		Next(context.Context, expr.Vars) (Step, expr.Vars, error)
+		Next(context.Context, *expr.Vars) (Step, *expr.Vars, error)
 	}
 
 	ResultEvaluator interface {
-		EvalResults(ctx context.Context, results expr.Vars) (out expr.Vars, err error)
+		EvalResults(ctx context.Context, results *expr.Vars) (out *expr.Vars, err error)
 	}
 
 	IteratorHandler interface {
-		Start(context.Context, expr.Vars) error
-		More(context.Context, expr.Vars) (bool, error)
-		Next(context.Context, expr.Vars) (expr.Vars, error)
+		Start(context.Context, *expr.Vars) error
+		More(context.Context, *expr.Vars) (bool, error)
+		Next(context.Context, *expr.Vars) (*expr.Vars, error)
 	}
 
 	// Handles communication between Session's exec() fn and iterator handler
@@ -56,20 +56,20 @@ func GenericIterator(iter, next, exit Step, h IteratorHandler) Iterator {
 	}
 }
 
-func (i *genericIterator) Is(s Step) bool                               { return i.iter == s }
-func (i *genericIterator) Start(ctx context.Context, s expr.Vars) error { return i.h.Start(ctx, s) }
-func (i *genericIterator) Break() Step                                  { return i.exit }
-func (i *genericIterator) Iterator() Step                               { return i.iter }
+func (i *genericIterator) Is(s Step) bool                                { return i.iter == s }
+func (i *genericIterator) Start(ctx context.Context, s *expr.Vars) error { return i.h.Start(ctx, s) }
+func (i *genericIterator) Break() Step                                   { return i.exit }
+func (i *genericIterator) Iterator() Step                                { return i.iter }
 
 // Next calls More and Next functions on iterator handler.
 //
 // If iterator step (iter field) implements ResultEvaluator it calls
 // EvalResults on it before returning it. If iterator step does not implement it,
 // results are omitted.
-func (i *genericIterator) Next(ctx context.Context, scope expr.Vars) (next Step, out expr.Vars, err error) {
+func (i *genericIterator) Next(ctx context.Context, scope *expr.Vars) (next Step, out *expr.Vars, err error) {
 	var (
 		more    bool
-		results expr.Vars
+		results *expr.Vars
 	)
 	if more, err = i.h.More(ctx, scope); err != nil || !more {
 		return
