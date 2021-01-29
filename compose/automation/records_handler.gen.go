@@ -61,10 +61,10 @@ type (
 	}
 )
 
-//
+// LookupByID function Lookup for compose record by ID
 //
 // expects implementation of lookupByID function:
-// func (h records) lookupByID(ctx context.Context, args *recordsLookupByIDArgs) (results *recordsLookupByIDResults, err error) {
+// func (h recordsHandler) lookupByID(ctx context.Context, args *recordsLookupByIDArgs) (results *recordsLookupByIDResults, err error) {
 //    return
 // }
 func (h recordsHandler) LookupByID() *atypes.Function {
@@ -115,24 +115,30 @@ func (h recordsHandler) LookupByID() *atypes.Function {
 				return
 			}
 
-			// Converting Module to go type
-			switch casted := args.Module.(type) {
-			case uint64:
-				args.moduleID = casted
-			case string:
-				args.moduleHandle = casted
-			case *types.Module:
-				args.moduleRes = casted
+			// Converting Module argument
+			if args.hasModule {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.moduleID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.moduleHandle = aux.Get().(string)
+				case h.reg.Type("ComposeModule").Type():
+					args.moduleRes = aux.Get().(*types.Module)
+				}
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
-			case *types.Namespace:
-				args.namespaceRes = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				case h.reg.Type("ComposeNamespace").Type():
+					args.namespaceRes = aux.Get().(*types.Namespace)
+				}
 			}
 
 			var results *recordsLookupByIDResults
@@ -159,10 +165,10 @@ type (
 	}
 )
 
-//
+// Save function Save record
 //
 // expects implementation of save function:
-// func (h records) save(ctx context.Context, args *recordsSaveArgs) (results *recordsSaveResults, err error) {
+// func (h recordsHandler) save(ctx context.Context, args *recordsSaveArgs) (results *recordsSaveResults, err error) {
 //    return
 // }
 func (h recordsHandler) Save() *atypes.Function {
@@ -236,10 +242,10 @@ type (
 	}
 )
 
-//
+// Validate function Validate record
 //
 // expects implementation of validate function:
-// func (h records) validate(ctx context.Context, args *recordsValidateArgs) (results *recordsValidateResults, err error) {
+// func (h recordsHandler) validate(ctx context.Context, args *recordsValidateArgs) (results *recordsValidateResults, err error) {
 //    return
 // }
 func (h recordsHandler) Validate() *atypes.Function {
@@ -301,24 +307,30 @@ func (h recordsHandler) Validate() *atypes.Function {
 				return
 			}
 
-			// Converting Module to go type
-			switch casted := args.Module.(type) {
-			case uint64:
-				args.moduleID = casted
-			case string:
-				args.moduleHandle = casted
-			case *types.Module:
-				args.moduleRes = casted
+			// Converting Module argument
+			if args.hasModule {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.moduleID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.moduleHandle = aux.Get().(string)
+				case h.reg.Type("ComposeModule").Type():
+					args.moduleRes = aux.Get().(*types.Module)
+				}
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
-			case *types.Namespace:
-				args.namespaceRes = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				case h.reg.Type("ComposeNamespace").Type():
+					args.namespaceRes = aux.Get().(*types.Namespace)
+				}
 			}
 
 			var results *recordsValidateResults
@@ -361,10 +373,10 @@ type (
 	}
 )
 
-//
+// Convert function Converts record
 //
 // expects implementation of convert function:
-// func (h records) convert(ctx context.Context, args *recordsConvertArgs) (results *recordsConvertResults, err error) {
+// func (h recordsHandler) convert(ctx context.Context, args *recordsConvertArgs) (results *recordsConvertResults, err error) {
 //    return
 // }
 func (h recordsHandler) Convert() *atypes.Function {
@@ -420,24 +432,30 @@ func (h recordsHandler) Convert() *atypes.Function {
 				return
 			}
 
-			// Converting Module to go type
-			switch casted := args.Module.(type) {
-			case uint64:
-				args.moduleID = casted
-			case string:
-				args.moduleHandle = casted
-			case *types.Module:
-				args.moduleRes = casted
+			// Converting Module argument
+			if args.hasModule {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.moduleID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.moduleHandle = aux.Get().(string)
+				case h.reg.Type("ComposeModule").Type():
+					args.moduleRes = aux.Get().(*types.Module)
+				}
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
-			case *types.Namespace:
-				args.namespaceRes = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				case h.reg.Type("ComposeNamespace").Type():
+					args.namespaceRes = aux.Get().(*types.Namespace)
+				}
 			}
 
 			var results *recordsConvertResults
@@ -482,10 +500,10 @@ type (
 	}
 )
 
-//
+// Create function Creates and stores a new record
 //
 // expects implementation of create function:
-// func (h records) create(ctx context.Context, args *recordsCreateArgs) (results *recordsCreateResults, err error) {
+// func (h recordsHandler) create(ctx context.Context, args *recordsCreateArgs) (results *recordsCreateResults, err error) {
 //    return
 // }
 func (h recordsHandler) Create() *atypes.Function {
@@ -550,24 +568,30 @@ func (h recordsHandler) Create() *atypes.Function {
 				return
 			}
 
-			// Converting Module to go type
-			switch casted := args.Module.(type) {
-			case uint64:
-				args.moduleID = casted
-			case string:
-				args.moduleHandle = casted
-			case *types.Module:
-				args.moduleRes = casted
+			// Converting Module argument
+			if args.hasModule {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.moduleID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.moduleHandle = aux.Get().(string)
+				case h.reg.Type("ComposeModule").Type():
+					args.moduleRes = aux.Get().(*types.Module)
+				}
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
-			case *types.Namespace:
-				args.namespaceRes = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				case h.reg.Type("ComposeNamespace").Type():
+					args.namespaceRes = aux.Get().(*types.Namespace)
+				}
 			}
 
 			var results *recordsCreateResults
@@ -612,10 +636,10 @@ type (
 	}
 )
 
-//
+// Update function Updates an existing record
 //
 // expects implementation of update function:
-// func (h records) update(ctx context.Context, args *recordsUpdateArgs) (results *recordsUpdateResults, err error) {
+// func (h recordsHandler) update(ctx context.Context, args *recordsUpdateArgs) (results *recordsUpdateResults, err error) {
 //    return
 // }
 func (h recordsHandler) Update() *atypes.Function {
@@ -680,24 +704,30 @@ func (h recordsHandler) Update() *atypes.Function {
 				return
 			}
 
-			// Converting Module to go type
-			switch casted := args.Module.(type) {
-			case uint64:
-				args.moduleID = casted
-			case string:
-				args.moduleHandle = casted
-			case *types.Module:
-				args.moduleRes = casted
+			// Converting Module argument
+			if args.hasModule {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.moduleID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.moduleHandle = aux.Get().(string)
+				case h.reg.Type("ComposeModule").Type():
+					args.moduleRes = aux.Get().(*types.Module)
+				}
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
-			case *types.Namespace:
-				args.namespaceRes = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				case h.reg.Type("ComposeNamespace").Type():
+					args.namespaceRes = aux.Get().(*types.Namespace)
+				}
 			}
 
 			var results *recordsUpdateResults
@@ -732,10 +762,10 @@ type (
 	}
 )
 
-//
+// Delete function Soft deletes compose record by ID
 //
 // expects implementation of delete function:
-// func (h records) delete(ctx context.Context, args *recordsDeleteArgs) (results *recordsDeleteResults, err error) {
+// func (h recordsHandler) delete(ctx context.Context, args *recordsDeleteArgs) (err error) {
 //    return
 // }
 func (h recordsHandler) Delete() *atypes.Function {
@@ -778,24 +808,30 @@ func (h recordsHandler) Delete() *atypes.Function {
 				return
 			}
 
-			// Converting Module to go type
-			switch casted := args.Module.(type) {
-			case uint64:
-				args.moduleID = casted
-			case string:
-				args.moduleHandle = casted
-			case *types.Module:
-				args.moduleRes = casted
+			// Converting Module argument
+			if args.hasModule {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.moduleID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.moduleHandle = aux.Get().(string)
+				case h.reg.Type("ComposeModule").Type():
+					args.moduleRes = aux.Get().(*types.Module)
+				}
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
-			case *types.Namespace:
-				args.namespaceRes = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				case h.reg.Type("ComposeNamespace").Type():
+					args.namespaceRes = aux.Get().(*types.Namespace)
+				}
 			}
 
 			return out, h.delete(ctx, args)

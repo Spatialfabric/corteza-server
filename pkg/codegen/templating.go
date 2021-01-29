@@ -110,6 +110,10 @@ func removePtr(name string) string {
 	return strings.TrimLeft(name, "*")
 }
 
+func hasPtr(name string) bool {
+	return len(name) > 0 && name[0:1] == "*"
+}
+
 func toggleExport(e bool, pp ...string) (out string) {
 	if e {
 		return export(pp...)

@@ -44,10 +44,10 @@ type (
 	}
 )
 
-//
+// Lookup function Lookup for compose namespace by ID
 //
 // expects implementation of lookup function:
-// func (h namespaces) lookup(ctx context.Context, args *namespacesLookupArgs) (results *namespacesLookupResults, err error) {
+// func (h namespacesHandler) lookup(ctx context.Context, args *namespacesLookupArgs) (results *namespacesLookupResults, err error) {
 //    return
 // }
 func (h namespacesHandler) Lookup() *atypes.Function {
@@ -84,12 +84,15 @@ func (h namespacesHandler) Lookup() *atypes.Function {
 				return
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				}
 			}
 
 			var results *namespacesLookupResults

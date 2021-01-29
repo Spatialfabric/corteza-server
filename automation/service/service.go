@@ -10,7 +10,7 @@ import (
 	"github.com/cortezaproject/corteza-server/pkg/options"
 	"github.com/cortezaproject/corteza-server/pkg/rbac"
 	"github.com/cortezaproject/corteza-server/store"
-	systemService "github.com/cortezaproject/corteza-server/system/service"
+	"github.com/cortezaproject/corteza-server/system/types"
 	"go.uber.org/zap"
 	"time"
 )
@@ -23,6 +23,10 @@ type (
 
 	Config struct {
 		ActionLog options.ActionLogOpt
+	}
+
+	userService interface {
+		FindByID(ctx context.Context, userID uint64) (*types.User, error)
 	}
 )
 
@@ -41,7 +45,7 @@ var (
 
 	DefaultActionlog actionlog.Recorder
 
-	DefaultUser     systemService.UserService
+	DefaultUser     userService
 	DefaultWorkflow *workflow
 	DefaultTrigger  *trigger
 	DefaultSession  *session
@@ -85,7 +89,6 @@ func Initialize(ctx context.Context, log *zap.Logger, s store.Storer, c Config) 
 
 	DefaultAccessControl = AccessControl(rbac.Global())
 
-	DefaultUser = systemService.DefaultUser
 	DefaultWorkflow = Workflow(DefaultLogger.Named("workflow"))
 	DefaultSession = Session(DefaultLogger.Named("session"))
 	DefaultTrigger = Trigger(DefaultLogger.Named("trigger"))

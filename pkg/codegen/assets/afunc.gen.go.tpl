@@ -68,10 +68,10 @@ type (
 	{{- end }}
 )
 
-//
+// {{ export .Name }} function {{ .Meta.Short }}
 //
 // expects implementation of {{ .Name }} function:
-// func (h {{ $.Name }}) {{ .Name }}(ctx context.Context, args *{{ $ARGS }}) (results *{{ $RESULTS }}, err error) {
+// func (h {{ $.Name }}Handler) {{ .Name }}(ctx context.Context, args *{{ $ARGS }}) ({{ if .Results }}results *{{ $RESULTS }}, {{ end }}err error) {
 //    return
 // }
 func (h {{ $.Name }}Handler) {{ export .Name }}() *atypes.Function {
@@ -199,13 +199,17 @@ func (h {{ $.Name }}Handler) {{ export .Name }}() *atypes.Function {
 	{{ range . }}
 		{{ $NAME := .Name }}
 		{{ if gt (len .Types) 1 }}
-		// Converting {{ export .Name }} to go type
-		switch casted := args.{{ export .Name }}.(type) {
+		// Converting {{ export .Name }} argument
+		if args.has{{ export .Name }} {
+			aux := expr.Must(expr.Select(in, "query"))
+			switch aux.Type() {
 		{{- range .Types }}
-			case {{ .GoType }}:
-				args.{{ $NAME }}{{ export .Suffix }} = casted
+			case h.reg.Type({{ printf "%q" .WorkflowType }}).Type():
+				args.{{ $NAME }}{{ export .Suffix }} = aux.Get().({{ .GoType }})
 		{{- end -}}
+			}
 		}
+
 		{{- end }}
 	{{ end }}
 {{ end }}

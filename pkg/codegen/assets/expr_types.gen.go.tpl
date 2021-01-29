@@ -68,6 +68,15 @@ func (t *{{ $exprType }}) Set(val interface{}) (error) {
 func {{ $def.CastFn }}(val interface{}) ({{ $def.As }}, error) {
 	val = UntypedValue(val)
 
+	if val == nil {
+		// Creating an empty value
+		{{- if hasPtr $def.As }}
+		return &{{ removePtr $def.As }}{}, nil
+		{{- else }}
+		return {{ $def.As }}{}, nil
+		{{- end }}
+	}
+
 	switch val := val.(type) {
 	case {{ $def.As }}:
 		return val, nil
@@ -95,8 +104,24 @@ func (t {{ $exprType }}) SelectGVal(ctx context.Context, k string) (interface{},
 	return {{ unexport $exprType "selector" }}(t.value, k)
 }
 
+func (t {{ $exprType }}) Select(k string) (TypedValue, error) {
+	return {{ unexport $exprType "selector" }}(t.value, k)
+}
+
+func (t {{ $exprType }}) Has(k string) bool {
+	switch k {
+	{{- range $def.Struct }}
+		{{- if .ExprType }}
+		case {{ printf "%q" .Name }}{{ if .Alias }}, {{ printf "%q" .Alias }}{{ end }}:
+			return true
+		{{- end }}
+	{{- end }}
+	}
+	return false
+}
+
 // {{ unexport $exprType "selector" }} is field accessor for {{ $def.As }}
-func {{ unexport $exprType "selector" }}(res {{ $def.As }}, k string) (interface{}, error) {
+func {{ unexport $exprType "selector" }}(res {{ $def.As }}, k string) (TypedValue, error) {
 switch k {
 {{- range $def.Struct }}
 	{{- if .ExprType }}

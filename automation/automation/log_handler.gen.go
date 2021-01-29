@@ -43,10 +43,10 @@ type (
 	}
 )
 
-//
+// Debug function Writes debug log message
 //
 // expects implementation of debug function:
-// func (h log) debug(ctx context.Context, args *logDebugArgs) (results *logDebugResults, err error) {
+// func (h logHandler) debug(ctx context.Context, args *logDebugArgs) (err error) {
 //    return
 // }
 func (h logHandler) Debug() *atypes.Function {
@@ -95,10 +95,10 @@ type (
 	}
 )
 
-//
+// Info function Writes info log message
 //
 // expects implementation of info function:
-// func (h log) info(ctx context.Context, args *logInfoArgs) (results *logInfoResults, err error) {
+// func (h logHandler) info(ctx context.Context, args *logInfoArgs) (err error) {
 //    return
 // }
 func (h logHandler) Info() *atypes.Function {
@@ -147,10 +147,10 @@ type (
 	}
 )
 
-//
+// Warn function Writes warn log message
 //
 // expects implementation of warn function:
-// func (h log) warn(ctx context.Context, args *logWarnArgs) (results *logWarnResults, err error) {
+// func (h logHandler) warn(ctx context.Context, args *logWarnArgs) (err error) {
 //    return
 // }
 func (h logHandler) Warn() *atypes.Function {
@@ -199,10 +199,10 @@ type (
 	}
 )
 
-//
+// Error function Writes error log message
 //
 // expects implementation of error function:
-// func (h log) error(ctx context.Context, args *logErrorArgs) (results *logErrorResults, err error) {
+// func (h logHandler) error(ctx context.Context, args *logErrorArgs) (err error) {
 //    return
 // }
 func (h logHandler) Error() *atypes.Function {

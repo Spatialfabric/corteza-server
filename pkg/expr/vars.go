@@ -347,6 +347,10 @@ func decode(dst reflect.Value, src interface{}) (err error) {
 func castRVars(val interface{}) (out RVars, err error) {
 	val = UntypedValue(val)
 
+	if val == nil {
+		return make(RVars), nil
+	}
+
 	switch c := val.(type) {
 	case *Vars:
 		return c.value, nil

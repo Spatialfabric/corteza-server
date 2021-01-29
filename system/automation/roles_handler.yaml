@@ -1,0 +1,75 @@
+imports:
+  - github.com/cortezaproject/corteza-server/system/types
+
+params:
+  query: &query
+    types:
+      - { wf: ID,                 go: uint64,         suffix: ID }
+      - { wf: Handle,             go: string,         suffix: handle }
+
+  role: &role
+    types:
+      - { wf: Role, go: '*types.Role' }
+
+  rvRole: &rvRole
+    wf: Role
+    go: "*types.Role"
+
+functions:
+  lookup:
+    meta:
+      short: Looks-up for compose role by ID
+    params:
+      query:
+        <<: *query
+        required: true
+    results:
+      role: *rvRole
+
+  create:
+    meta:
+      short: Creates new role
+    params:
+      role:
+        <<: *role
+        required: true
+    results:
+      role: *rvRole
+
+  update:
+    meta:
+      short: Updates exiting role
+    params:
+      role:
+        <<: *role
+        required: true
+    results:
+      role: *rvRole
+
+  delete:
+    meta:
+      short: Deletes the role
+    params:
+      query: *query
+      role: *role
+
+  recover:
+    meta:
+      short: Recovers deleted role
+    params:
+      query: *query
+      role: *role
+
+  archive:
+    meta:
+      short: Archives the role
+    params:
+      query: *query
+      role: *role
+
+  unarchive:
+    meta:
+      short: Unarchives the role
+    params:
+      query: *query
+      role: *role

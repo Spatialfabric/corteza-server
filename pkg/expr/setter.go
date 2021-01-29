@@ -31,9 +31,9 @@ func setter(base TypedValue, val interface{}, pp ...string) (err error) {
 	// descend lower by the path but
 	// stop before the last part of the path
 	for len(pp) > 1 {
-		println(path, key)
 		s, is := base.(Selector)
 		if !is {
+			println("fooy")
 			return failure
 		}
 		key, pp = pp[0], pp[1:]

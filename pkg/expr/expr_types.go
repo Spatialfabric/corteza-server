@@ -69,7 +69,7 @@ func (t *KV) SetFieldValue(key string, val interface{}) error {
 		t.value = make(map[string]string)
 	}
 
-	str, err := cast.ToStringE(val)
+	str, err := cast.ToStringE(UntypedValue(val))
 	t.value[key] = str
 	return err
 }
@@ -89,6 +89,11 @@ func (t *KV) Select(k string) (TypedValue, error) {
 
 func castKV(val interface{}) (out map[string]string, err error) {
 	val = UntypedValue(val)
+
+	if val == nil {
+		return make(map[string]string), nil
+	}
+
 	switch casted := val.(type) {
 	case map[string]string:
 		return casted, nil
@@ -109,6 +114,11 @@ func (t *KVV) SetFieldValue(key string, val interface{}) error {
 
 func castKVV(val interface{}) (out map[string][]string, err error) {
 	val = UntypedValue(val)
+
+	if val == nil {
+		return make(map[string][]string), nil
+	}
+
 	switch casted := val.(type) {
 	case http.Header:
 		return casted, nil

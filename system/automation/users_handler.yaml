@@ -1,0 +1,76 @@
+imports:
+  - github.com/cortezaproject/corteza-server/system/types
+
+params:
+  query: &query
+    types:
+      - { wf: ID,                 go: uint64,         suffix: ID }
+      - { wf: Handle,             go: string,         suffix: handle }
+      - { wf: String,             go: string,         suffix: email }
+
+  user: &user
+    types:
+      - { wf: User, go: '*types.User' }
+
+  rvUser: &rvUser
+    wf: User
+    go: "*types.User"
+
+functions:
+  lookup:
+    meta:
+      short: Looks-up for compose user by ID
+    params:
+      query:
+        <<: *query
+        required: true
+    results:
+      user: *rvUser
+
+  create:
+    meta:
+      short: Creates new user
+    params:
+      user:
+        <<: *user
+        required: true
+    results:
+      user: *rvUser
+
+  update:
+    meta:
+      short: Updates exiting user
+    params:
+      user:
+        <<: *user
+        required: true
+    results:
+      user: *rvUser
+
+  delete:
+    meta:
+      short: Deletes user
+    params:
+      query: *query
+      user: *user
+
+  recover:
+    meta:
+      short: Recovers deleted user
+    params:
+      query: *query
+      user: *user
+
+  suspend:
+    meta:
+      short: Suspends user
+    params:
+      query: *query
+      user: *user
+
+  unsuspend:
+    meta:
+      short: Unsuspends user
+    params:
+      query: *query
+      user: *user

@@ -57,6 +57,11 @@ func (t *Module) Set(val interface{}) error {
 func moduleCast(val interface{}) (*types.Module, error) {
 	val = UntypedValue(val)
 
+	if val == nil {
+		// Creating an empty value
+		return &types.Module{}, nil
+	}
+
 	switch val := val.(type) {
 	case *types.Module:
 		return val, nil
@@ -82,8 +87,32 @@ func (t Module) SelectGVal(ctx context.Context, k string) (interface{}, error) {
 	return moduleSelector(t.value, k)
 }
 
+func (t Module) Select(k string) (TypedValue, error) {
+	return moduleSelector(t.value, k)
+}
+
+func (t Module) Has(k string) bool {
+	switch k {
+	case "ID":
+		return true
+	case "name":
+		return true
+	case "handle":
+		return true
+	case "labels":
+		return true
+	case "createdAt":
+		return true
+	case "updatedAt":
+		return true
+	case "deletedAt":
+		return true
+	}
+	return false
+}
+
 // moduleSelector is field accessor for *types.Module
-func moduleSelector(res *types.Module, k string) (interface{}, error) {
+func moduleSelector(res *types.Module, k string) (TypedValue, error) {
 	switch k {
 	case "ID":
 		return NewID(res.ID)
@@ -160,6 +189,11 @@ func (t *Namespace) Set(val interface{}) error {
 func namespaceCast(val interface{}) (*types.Namespace, error) {
 	val = UntypedValue(val)
 
+	if val == nil {
+		// Creating an empty value
+		return &types.Namespace{}, nil
+	}
+
 	switch val := val.(type) {
 	case *types.Namespace:
 		return val, nil
@@ -185,8 +219,32 @@ func (t Namespace) SelectGVal(ctx context.Context, k string) (interface{}, error
 	return namespaceSelector(t.value, k)
 }
 
+func (t Namespace) Select(k string) (TypedValue, error) {
+	return namespaceSelector(t.value, k)
+}
+
+func (t Namespace) Has(k string) bool {
+	switch k {
+	case "ID":
+		return true
+	case "name":
+		return true
+	case "slug", "handle":
+		return true
+	case "labels":
+		return true
+	case "createdAt":
+		return true
+	case "updatedAt":
+		return true
+	case "deletedAt":
+		return true
+	}
+	return false
+}
+
 // namespaceSelector is field accessor for *types.Namespace
-func namespaceSelector(res *types.Namespace, k string) (interface{}, error) {
+func namespaceSelector(res *types.Namespace, k string) (TypedValue, error) {
 	switch k {
 	case "ID":
 		return NewID(res.ID)
@@ -263,6 +321,11 @@ func (t *Record) Set(val interface{}) error {
 func recordCast(val interface{}) (*types.Record, error) {
 	val = UntypedValue(val)
 
+	if val == nil {
+		// Creating an empty value
+		return &types.Record{}, nil
+	}
+
 	switch val := val.(type) {
 	case *types.Record:
 		return val, nil
@@ -288,8 +351,28 @@ func (t Record) SelectGVal(ctx context.Context, k string) (interface{}, error) {
 	return recordSelector(t.value, k)
 }
 
+func (t Record) Select(k string) (TypedValue, error) {
+	return recordSelector(t.value, k)
+}
+
+func (t Record) Has(k string) bool {
+	switch k {
+	case "ID":
+		return true
+	case "labels":
+		return true
+	case "createdAt":
+		return true
+	case "updatedAt":
+		return true
+	case "deletedAt":
+		return true
+	}
+	return false
+}
+
 // recordSelector is field accessor for *types.Record
-func recordSelector(res *types.Record, k string) (interface{}, error) {
+func recordSelector(res *types.Record, k string) (TypedValue, error) {
 	switch k {
 	case "ID":
 		return NewID(res.ID)
@@ -358,6 +441,11 @@ func (t *RecordValueErrorSet) Set(val interface{}) error {
 func recordValueErrorSetCast(val interface{}) (*types.RecordValueErrorSet, error) {
 	val = UntypedValue(val)
 
+	if val == nil {
+		// Creating an empty value
+		return &types.RecordValueErrorSet{}, nil
+	}
+
 	switch val := val.(type) {
 	case *types.RecordValueErrorSet:
 		return val, nil
@@ -404,6 +492,11 @@ func (t *RecordValues) Set(val interface{}) error {
 // recordValuesCast arbitrary value to casts RecordValues
 func recordValuesCast(val interface{}) (types.RecordValueSet, error) {
 	val = UntypedValue(val)
+
+	if val == nil {
+		// Creating an empty value
+		return types.RecordValueSet{}, nil
+	}
 
 	switch val := val.(type) {
 	case types.RecordValueSet:

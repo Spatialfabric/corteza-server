@@ -406,6 +406,9 @@ func (s *Session) exec(ctx context.Context, st *State) {
 		log = log.With(zap.Uint64("step", st.step.ID()))
 	}
 
+	// @todo enable this when not in debug mode
+	//       - OR -
+	//       find a way to stick stacktrace from panic to log
 	//defer func() {
 	//	reason := recover()
 	//	if reason == nil {

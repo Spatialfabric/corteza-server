@@ -174,7 +174,7 @@ func (set ExprSet) Eval(ctx context.Context, in *expr.Vars) (*expr.Vars, error) 
 		if e.typ != nil {
 			if !knownType(typedValue) {
 				// Expression has fixed type but value does not
-				// cast the value of evaluation to type of the expression
+				// cast the value of evaluation to type of the expressicason
 				if typedValue, err = e.typ.Cast(value); err != nil {
 					return nil, err
 				}

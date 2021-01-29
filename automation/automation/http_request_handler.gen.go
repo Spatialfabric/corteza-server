@@ -86,10 +86,10 @@ type (
 	}
 )
 
-//
+// Send function Sends HTTP request
 //
 // expects implementation of send function:
-// func (h httpRequest) send(ctx context.Context, args *httpRequestSendArgs) (results *httpRequestSendResults, err error) {
+// func (h httpRequestHandler) send(ctx context.Context, args *httpRequestSendArgs) (results *httpRequestSendResults, err error) {
 //    return
 // }
 func (h httpRequestHandler) Send() *atypes.Function {
@@ -206,14 +206,17 @@ func (h httpRequestHandler) Send() *atypes.Function {
 				return
 			}
 
-			// Converting Body to go type
-			switch casted := args.Body.(type) {
-			case string:
-				args.bodyString = casted
-			case io.Reader:
-				args.bodyStream = casted
-			case interface{}:
-				args.bodyRaw = casted
+			// Converting Body argument
+			if args.hasBody {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("String").Type():
+					args.bodyString = aux.Get().(string)
+				case h.reg.Type("Reader").Type():
+					args.bodyStream = aux.Get().(io.Reader)
+				case h.reg.Type("Any").Type():
+					args.bodyRaw = aux.Get().(interface{})
+				}
 			}
 
 			var results *httpRequestSendResults

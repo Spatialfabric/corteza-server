@@ -53,10 +53,10 @@ type (
 	}
 )
 
-//
+// Sequence function Iterates over sequence of numbers
 //
 // expects implementation of sequence function:
-// func (h loop) sequence(ctx context.Context, args *loopSequenceArgs) (results *loopSequenceResults, err error) {
+// func (h loopHandler) sequence(ctx context.Context, args *loopSequenceArgs) (results *loopSequenceResults, err error) {
 //    return
 // }
 func (h loopHandler) Sequence() *atypes.Function {
@@ -125,10 +125,10 @@ type (
 	}
 )
 
-//
+// Do function Iterates while condition is true
 //
 // expects implementation of do function:
-// func (h loop) do(ctx context.Context, args *loopDoArgs) (results *loopDoResults, err error) {
+// func (h loopHandler) do(ctx context.Context, args *loopDoArgs) (err error) {
 //    return
 // }
 func (h loopHandler) Do() *atypes.Function {
@@ -177,10 +177,10 @@ type (
 	}
 )
 
-//
+// Each function Iterates over set of items
 //
 // expects implementation of each function:
-// func (h loop) each(ctx context.Context, args *loopEachArgs) (results *loopEachResults, err error) {
+// func (h loopHandler) each(ctx context.Context, args *loopEachArgs) (results *loopEachResults, err error) {
 //    return
 // }
 func (h loopHandler) Each() *atypes.Function {
@@ -233,10 +233,10 @@ type (
 	}
 )
 
-//
+// Lines function Iterates over lines from stream
 //
 // expects implementation of lines function:
-// func (h loop) lines(ctx context.Context, args *loopLinesArgs) (results *loopLinesResults, err error) {
+// func (h loopHandler) lines(ctx context.Context, args *loopLinesArgs) (results *loopLinesResults, err error) {
 //    return
 // }
 func (h loopHandler) Lines() *atypes.Function {

@@ -76,6 +76,7 @@ func Proc() {
 				"export":          export,
 				"unexport":        unexport,
 				"removePtr":       removePtr,
+				"hasPtr":          hasPtr,
 				"toggleExport":    toggleExport,
 				"toLower":         strings.ToLower,
 				"toUpper":         strings.ToUpper,

@@ -102,7 +102,7 @@ func (f *functionStep) Exec(ctx context.Context, r *wfexec.ExecRequest) (wfexec.
 
 	if len(f.results) == 0 {
 		// No results defined, nothing to return
-		return expr.Vars{}, nil
+		return expr.NewVars(nil)
 	}
 
 	results, err = f.results.Eval(ctx, results)

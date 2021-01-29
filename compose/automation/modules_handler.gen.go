@@ -50,10 +50,10 @@ type (
 	}
 )
 
-//
+// Lookup function Lookup for compose module by ID
 //
 // expects implementation of lookup function:
-// func (h modules) lookup(ctx context.Context, args *modulesLookupArgs) (results *modulesLookupResults, err error) {
+// func (h modulesHandler) lookup(ctx context.Context, args *modulesLookupArgs) (results *modulesLookupResults, err error) {
 //    return
 // }
 func (h modulesHandler) Lookup() *atypes.Function {
@@ -95,22 +95,28 @@ func (h modulesHandler) Lookup() *atypes.Function {
 				return
 			}
 
-			// Converting Module to go type
-			switch casted := args.Module.(type) {
-			case uint64:
-				args.moduleID = casted
-			case string:
-				args.moduleHandle = casted
+			// Converting Module argument
+			if args.hasModule {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.moduleID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.moduleHandle = aux.Get().(string)
+				}
 			}
 
-			// Converting Namespace to go type
-			switch casted := args.Namespace.(type) {
-			case uint64:
-				args.namespaceID = casted
-			case string:
-				args.namespaceHandle = casted
-			case *types.Namespace:
-				args.namespaceRes = casted
+			// Converting Namespace argument
+			if args.hasNamespace {
+				aux := expr.Must(expr.Select(in, "query"))
+				switch aux.Type() {
+				case h.reg.Type("ID").Type():
+					args.namespaceID = aux.Get().(uint64)
+				case h.reg.Type("Handle").Type():
+					args.namespaceHandle = aux.Get().(string)
+				case h.reg.Type("ComposeNamespace").Type():
+					args.namespaceRes = aux.Get().(*types.Namespace)
+				}
 			}
 
 			var results *modulesLookupResults

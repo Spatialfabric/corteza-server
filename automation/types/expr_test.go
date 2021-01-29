@@ -2,7 +2,7 @@ package types
 
 import (
 	"context"
-	"github.com/cortezaproject/corteza-server/pkg/expr"
+	. "github.com/cortezaproject/corteza-server/pkg/expr"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -11,19 +11,11 @@ func TestExprSet_Eval(t *testing.T) {
 	var (
 		ctx = context.Background()
 
-		// extract typed-value
-		etv = func(v expr.TypedValue, err error) expr.TypedValue {
-			if err != nil {
-				panic(err)
-			}
-			return v
-		}
-
 		cc = []struct {
 			name   string
 			set    ExprSet
-			input  expr.RVars
-			output expr.RVars
+			input  RVars
+			output RVars
 			err    string
 		}{
 			{
@@ -34,57 +26,70 @@ func TestExprSet_Eval(t *testing.T) {
 			{
 				name:   "constant assignment",
 				set:    ExprSet{&Expr{Target: "foo", Expr: `"bar"`}},
-				output: expr.RVars{"foo": etv(expr.NewAny("bar"))},
+				output: RVars{"foo": Must(NewAny("bar"))},
 			},
 			{
 				name:   "vars with path",
 				set:    ExprSet{&Expr{Target: "l1.l2", Expr: `"bar"`}},
-				input:  expr.RVars{"l1": expr.RVars{}.Vars()},
-				output: expr.RVars{"l1": expr.RVars{"l2": etv(expr.NewAny("bar"))}.Vars()},
+				input:  RVars{"l1": RVars{}.Vars()},
+				output: RVars{"l1": RVars{"l2": Must(NewAny("bar"))}.Vars()},
 			},
 			{
 				name: "copy vars with same types",
 				set: ExprSet{
-					&Expr{Target: "aa", Value: "vv", typ: &expr.String{}},
-					&Expr{Target: "bb", Source: "aa", typ: &expr.String{}},
+					&Expr{Target: "aa", Value: "vv", typ: &String{}},
+					&Expr{Target: "bb", Source: "aa", typ: &String{}},
 				},
-				output: expr.RVars{
-					"aa": etv(expr.NewString("vv")),
-					"bb": etv(expr.NewString("vv")),
+				output: RVars{
+					"aa": Must(NewString("vv")),
+					"bb": Must(NewString("vv")),
 				},
 			},
 			{
 				name: "copy var with type",
 				set: ExprSet{
-					&Expr{Target: "aa", Value: "should be always String", typ: &expr.String{}},
+					&Expr{Target: "aa", Value: "should be always String", typ: &String{}},
 					&Expr{Target: "bb", Source: "aa"},
 				},
-				output: expr.RVars{
-					"aa": etv(expr.NewString("should be always String")),
-					"bb": etv(expr.NewString("should be always String")),
+				output: RVars{
+					"aa": Must(NewString("should be always String")),
+					"bb": Must(NewString("should be always String")),
 				},
 			},
 			{
 				name: "copy var to target with type",
 				set: ExprSet{
-					&Expr{Target: "aa", Value: "42", typ: &expr.String{}},
-					&Expr{Target: "bb", Source: "aa", typ: &expr.Integer{}},
+					&Expr{Target: "aa", Value: "42", typ: &String{}},
+					&Expr{Target: "bb", Source: "aa", typ: &Integer{}},
 				},
-				output: expr.RVars{
-					"aa": etv(expr.NewString("42")),
-					"bb": etv(expr.NewInteger(42)),
+				output: RVars{
+					"aa": Must(NewString("42")),
+					"bb": Must(NewInteger(42)),
 				},
 			},
 			{
 				name: "assign into incompatible",
 				set: ExprSet{
-					&Expr{Target: "aa", Value: "foo", typ: &expr.String{}},
-					&Expr{Target: "bb", Source: "aa", typ: &expr.Integer{}},
+					&Expr{Target: "aa", Value: "foo", typ: &String{}},
+					&Expr{Target: "bb", Source: "aa", typ: &Integer{}},
 				},
 				err: "unable to cast \"foo\" of type string to int64",
 			},
+			{
+				name: "deep set into generated type",
+				set: ExprSet{
+					&Expr{Target: "a", typ: &KV{}},
+					&Expr{Target: "a.b", Value: "c", typ: &String{}},
+				},
+				output: RVars{
+					"a": Must(NewKV(map[string]string{
+						"b": "c",
+					})),
+				},
+			},
 		}
 	)
+
 	for _, c := range cc {
 		t.Run(c.name, func(t *testing.T) {
 			var (
@@ -93,16 +98,16 @@ func TestExprSet_Eval(t *testing.T) {
 
 			for _, e := range c.set {
 				if e.Expr != "" {
-					req.NoError(expr.NewGvalParser().ParseEvaluators(e))
+					req.NoError(NewGvalParser().ParseEvaluators(e))
 				}
 
 				if e.typ == nil {
-					e.typ = expr.Any{}
+					e.typ = Any{}
 				}
 			}
 
 			var (
-				aux, _      = expr.NewVars(c.input)
+				aux, _      = NewVars(c.input)
 				output, err = c.set.Eval(ctx, aux)
 			)
 
