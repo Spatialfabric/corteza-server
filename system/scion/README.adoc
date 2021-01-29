@@ -1,0 +1,3 @@
+= Scion
+
+Happy little package to make happy little documents.
