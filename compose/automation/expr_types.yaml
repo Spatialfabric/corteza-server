@@ -1,0 +1,51 @@
+package: automation
+imports:
+  - github.com/cortezaproject/corteza-server/compose/types
+
+prefix: Compose
+
+types:
+  Namespace:
+    as: '*types.Namespace'
+    struct:
+      - { name: 'ID',              exprType: 'ID',         goType: 'uint64' }
+      - { name: 'name',            exprType: 'String',     goType: 'string' }
+      - { name: 'slug',            exprType: 'Handle',     goType: 'string',
+          alias: 'handle'
+        }
+      - { name: 'labels',          exprType: 'KV',         goType: 'map[string]string' }
+      - { name: 'createdAt',       exprType: 'DateTime',   goType: 'time.Time' }
+      - { name: 'updatedAt',       exprType: 'DateTime',   goType: '*time.Time', mode: ro }
+      - { name: 'deletedAt',       exprType: 'DateTime',   goType: '*time.Time', mode: ro }
+
+  Module:
+    as: '*types.Module'
+    struct:
+      - { name: 'ID',              exprType: 'ID',         goType: 'uint64' }
+      - { name: 'name',            exprType: 'String',     goType: 'string' }
+      - { name: 'handle',          exprType: 'Handle',     goType: 'string' }
+      - { name: 'labels',          exprType: 'KV',         goType: 'map[string]string' }
+      - { name: 'createdAt',       exprType: 'DateTime',   goType: 'time.Time' }
+      - { name: 'updatedAt',       exprType: 'DateTime',   goType: '*time.Time', mode: ro }
+      - { name: 'deletedAt',       exprType: 'DateTime',   goType: '*time.Time', mode: ro }
+
+  Record:
+    as: '*types.Record'
+    struct:
+      - { name: 'ID',              exprType: 'ID',         goType: 'uint64' }
+      - { name: 'labels',          exprType: 'KV',         goType: 'map[string]string' }
+      - { name: 'createdAt',       exprType: 'DateTime',   goType: 'time.Time' }
+      - { name: 'updatedAt',       exprType: 'DateTime',   goType: '*time.Time', mode: ro }
+      - { name: 'deletedAt',       exprType: 'DateTime',   goType: '*time.Time', mode: ro }
+
+  RecordValues:
+    as: 'types.RecordValueSet'
+
+  RecordValueErrorSet:
+    as: '*types.RecordValueErrorSet'
+
+#
+#  Page:
+#    as: '*types.Page'
+#  Chart:
+#    as: '*types.Chart'

@@ -1,0 +1,170 @@
+prefix: compose
+
+imports:
+  - github.com/cortezaproject/corteza-server/compose/types
+  - github.com/cortezaproject/corteza-server/pkg/label
+
+params:
+  module: &module
+    types:
+      - { wf: ID,                 go: uint64,          suffix: ID }
+      - { wf: Handle,             go: string,          suffix: handle }
+      - { wf: ComposeModule,      go: "*types.Module", suffix: res }
+    meta:
+      label: Module to set record type
+      description: |-
+        Even with unique record ID across all modules, module needs to be known
+        before doing any record operations. Mainly because records of different
+        modules can be located in different stores.
+
+  namespace: &namespace
+    types:
+      - { wf: ID,                 go: uint64,             suffix: ID }
+      - { wf: Handle,             go: string,             suffix: handle }
+      - { wf: ComposeNamespace,   go: "*types.Namespace", suffix: res }
+
+  record: &record
+    types:
+      - { wf: ComposeRecord,      go: "*types.Record" }
+
+  recordID: &recordID
+    types:
+      - { wf: ID,          go: uint64 }
+
+  values: &values
+    types: [ { wf: KV,             go: 'types.RecordValueSet' }]
+
+  labels: &labels
+    types: [ { wf: KV,             go: 'label.Labels' }]
+
+  ownedBy: &ownedBy
+    types: [ { wf: ID,             go: uint64 } ]
+    meta:
+      label: Record owner
+      visual:
+        ref: users
+
+  recordReturnValue: &recordReturnValue
+    wf: ComposeRecord
+    go: "*types.Record"
+
+functions:
+  lookupByID:
+    meta:
+      short: Lookup for compose record by ID
+    params:
+      recordID:
+        <<: *recordID
+        required: true
+      module:
+        <<: *module
+        required: true
+      namespace:
+        <<: *namespace
+        required: true
+    results:
+      record: *recordReturnValue
+
+  save:
+    meta:
+      short: Save record
+    params:
+      record:
+        <<: *record
+        required: true
+    results:
+      record: *recordReturnValue
+
+  validate:
+    meta:
+      short: Validate record
+    params:
+      record:
+        <<: *record
+        required: true
+      module: *module
+      namespace: *namespace
+    results:
+      valid:
+        wf: Boolean
+        go: bool
+        meta:
+          label: Set to true when record is valid
+      errors:
+        wf: RecordValueErrorSet,
+        go: '*types.RecordValueErrorSet'
+        meta:
+          label: List of errors collected when validating the record
+
+  convert:
+    meta:
+      short: Converts record
+    params:
+      source:
+        <<: *record
+        required: true
+      module:
+        <<: *module
+        required: true
+      namespace:
+        <<: *namespace
+        required: true
+      map:
+        types:
+          - { wf: KV, go: 'map[string]string' }
+    results:
+      record: *recordReturnValue
+
+  create:
+    meta:
+      short: Creates and stores a new record
+    params:
+      module:
+        <<: *module
+        required: true
+      namespace:
+        <<: *namespace
+        required: true
+      values: *values
+      labels: *labels
+      ownedBy: *ownedBy
+    results:
+      record: *recordReturnValue
+
+  update:
+    meta:
+      short: Updates an existing record
+    params:
+      module:
+        <<: *module
+        required: true
+      namespace:
+        <<: *namespace
+        required: true
+      values: *values
+      labels: *labels
+      ownedBy: *ownedBy
+    results:
+      record: *recordReturnValue
+
+  delete:
+    meta:
+      short: Soft deletes compose record by ID
+    params:
+      recordID:
+        <<: *recordID
+        required: true
+      module:
+        <<: *module
+        required: true
+      namespace:
+        <<: *namespace
+        required: true
+
+#  restore:
+#    meta:
+#      short: Soft deletes compose record by ID
+#    params:
+#      recordID: *recordID
+#      module: *module
+#      namespace: *namespace
